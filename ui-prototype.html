@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vacation Planner UI Prototype</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f3ec;
+        --panel: #ffffff;
+        --panel-soft: #fffaf2;
+        --ink: #1f2933;
+        --muted: #667085;
+        --line: #eadfce;
+        --brand: #f97316;
+        --brand-dark: #c2410c;
+        --accent: #0f766e;
+        --shadow: 0 20px 60px rgba(31, 41, 51, 0.11);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 35rem),
+          linear-gradient(180deg, #fff7ed 0%, var(--bg) 34rem);
+        color: var(--ink);
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 0;
+      }
+
+      .logo {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      .logo-mark {
+        display: grid;
+        width: 38px;
+        height: 38px;
+        place-items: center;
+        border-radius: 14px;
+        background: var(--ink);
+        color: white;
+      }
+
+      .nav-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .ghost-btn,
+      .primary-btn,
+      .small-btn {
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .ghost-btn {
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.62);
+        color: var(--ink);
+      }
+
+      .primary-btn {
+        padding: 14px 18px;
+        background: var(--brand);
+        color: white;
+        box-shadow: 0 12px 24px rgba(249, 115, 22, 0.28);
+      }
+
+      .primary-btn:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .small-btn {
+        padding: 8px 12px;
+        background: #fff2e6;
+        color: var(--brand-dark);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+        gap: 28px;
+        align-items: start;
+        padding: 36px 0 28px;
+      }
+
+      .hero-copy {
+        padding: 34px 0;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        border: 1px solid rgba(249, 115, 22, 0.26);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.58);
+        color: var(--brand-dark);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      h1 {
+        max-width: 680px;
+        margin: 18px 0 18px;
+        font-size: clamp(42px, 7vw, 76px);
+        line-height: 0.95;
+        letter-spacing: -0.075em;
+      }
+
+      .hero-copy p {
+        max-width: 610px;
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.7;
+      }
+
+      .trust-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .trust-pill {
+        padding: 10px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .planner-card {
+        padding: 22px;
+        border: 1px solid rgba(234, 223, 206, 0.86);
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.84);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .planner-card h2,
+      .section-title h2 {
+        margin: 0;
+        letter-spacing: -0.045em;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: white;
+        color: var(--ink);
+        padding: 13px 14px;
+        outline: none;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: rgba(249, 115, 22, 0.82);
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.14);
+      }
+
+      .interest-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 6px;
+      }
+
+      .chip {
+        padding: 9px 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .chip.active {
+        border-color: rgba(15, 118, 110, 0.35);
+        background: #e6fffb;
+        color: var(--accent);
+      }
+
+      .submit-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 18px;
+      }
+
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+
+      .results {
+        display: grid;
+        grid-template-columns: minmax(0, 0.65fr) minmax(360px, 0.35fr);
+        gap: 24px;
+        padding: 34px 0 56px;
+        scroll-margin-top: 24px;
+      }
+
+      .section-title {
+        display: flex;
+        gap: 16px;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .section-title p {
+        margin: 7px 0 0;
+        color: var(--muted);
+      }
+
+      .day-stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .day-card,
+      .side-card {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        background: var(--panel);
+        box-shadow: 0 12px 38px rgba(31, 41, 51, 0.06);
+      }
+
+      .day-card {
+        overflow: hidden;
+      }
+
+      .day-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 20px;
+        background: var(--panel-soft);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .day-head h3 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.04em;
+      }
+
+      .day-meta {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .activity {
+        display: grid;
+        grid-template-columns: 92px 1fr auto;
+        gap: 16px;
+        padding: 18px 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .activity:last-child {
+        border-bottom: 0;
+      }
+
+      .time {
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .activity h4 {
+        margin: 0 0 6px;
+        font-size: 18px;
+        letter-spacing: -0.025em;
+      }
+
+      .activity p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 10px;
+      }
+
+      .tag {
+        padding: 5px 8px;
+        border-radius: 999px;
+        background: #f2f4f7;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .side {
+        position: sticky;
+        top: 16px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .side-card {
+        padding: 18px;
+      }
+
+      .map {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        min-height: 250px;
+        border-radius: 20px;
+        background:
+          linear-gradient(135deg, rgba(15, 118, 110, 0.18), transparent),
+          repeating-linear-gradient(45deg, #f4eadb, #f4eadb 12px, #fff7ed 12px, #fff7ed 24px);
+        color: var(--accent);
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .map span {
+        max-width: 230px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .status-note {
+        display: none;
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #e6fffb;
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .status-note.show {
+        display: block;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 12px;
+        margin: 16px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .summary-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+      }
+
+      .summary-list li:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .summary-list strong {
+        color: var(--ink);
+      }
+
+      .share-box {
+        display: grid;
+        gap: 10px;
+      }
+
+      .share-url {
+        overflow: hidden;
+        padding: 12px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: var(--muted);
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .footer {
+        border-top: 1px solid var(--line);
+        background: rgba(255, 250, 242, 0.72);
+      }
+
+      .footer-inner {
+        display: grid;
+        grid-template-columns: minmax(240px, 1.2fr) repeat(3, minmax(130px, 0.6fr));
+        gap: 28px;
+        padding: 34px 0;
+      }
+
+      .footer-brand p {
+        max-width: 340px;
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .footer h3 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      .footer-links {
+        display: grid;
+        gap: 10px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .footer a {
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        color: var(--brand-dark);
+      }
+
+      .footer-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 0 26px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .footer-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      @media (max-width: 900px) {
+        .hero,
+        .results {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-copy {
+          padding: 12px 0 0;
+        }
+
+        .side {
+          position: static;
+        }
+
+        .footer-inner {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .nav-actions {
+          display: none;
+        }
+
+        .form-grid,
+        .activity {
+          grid-template-columns: 1fr;
+        }
+
+        .activity {
+          gap: 8px;
+        }
+
+        .submit-row,
+        .section-title,
+        .day-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .primary-btn,
+        .ghost-btn,
+        .small-btn {
+          width: 100%;
+        }
+
+        .footer-inner,
+        .footer-bottom {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-inner {
+          gap: 22px;
+        }
+
+        .footer-bottom {
+          display: grid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell nav" aria-label="Main navigation">
+      <div class="logo">
+        <span class="logo-mark">VP</span>
+        <span>Vacation Planner</span>
+      </div>
+      <nav class="nav-actions" aria-label="Product actions">
+        <button class="ghost-btn" type="button">View sample</button>
+        <button class="primary-btn" type="button">Start planning</button>
+      </nav>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">AI itinerary builder for any city</span>
+          <h1>Turn a destination into a trip plan in seconds.</h1>
+          <p>
+            Enter where you are going, how long you will be there, and who is
+            coming. We will build a day-by-day plan with places, meals, pacing,
+            travel notes, and Google Maps links.
+          </p>
+          <div class="trust-row" aria-label="Key product promises">
+            <span class="trust-pill">Verified places</span>
+            <span class="trust-pill">Family-aware pacing</span>
+            <span class="trust-pill">Private share link</span>
+          </div>
+        </div>
+
+        <form id="planner-form" class="planner-card" aria-label="Create itinerary form">
+          <h2>Plan your trip</h2>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="destination">Destination</label>
+              <input id="destination" name="destination" value="California, USA" />
+            </div>
+
+            <div class="field">
+              <label for="start-date">Start date</label>
+              <input id="start-date" name="start-date" type="date" value="2026-08-12" />
+            </div>
+
+            <div class="field">
+              <label for="days">Trip length</label>
+              <select id="days" name="days">
+                <option>1 day</option>
+                <option>2 days</option>
+                <option>3 days</option>
+                <option selected>5 days</option>
+                <option>7 days</option>
+                <option>10 days</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="adults">Adults</label>
+              <input id="adults" name="adults" type="number" min="1" value="2" />
+            </div>
+
+            <div class="field">
+              <label for="children">Children</label>
+              <input id="children" name="children" type="number" min="0" value="1" />
+            </div>
+
+            <div class="field">
+              <label for="budget">Budget</label>
+              <select id="budget" name="budget">
+                <option>Budget</option>
+                <option selected>Moderate</option>
+                <option>Premium</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="pace">Pace</label>
+              <select id="pace" name="pace">
+                <option>Relaxed</option>
+                <option selected>Balanced</option>
+                <option>Packed</option>
+              </select>
+            </div>
+
+            <div class="field full">
+              <label>Interests</label>
+              <div class="interest-chips" aria-label="Interest choices">
+                <button class="chip active" type="button" data-interest="Food">Food</button>
+                <button class="chip active" type="button" data-interest="Museums">Museums</button>
+                <button class="chip" type="button" data-interest="Outdoors">Outdoors</button>
+                <button class="chip active" type="button" data-interest="Kid-friendly">Kid-friendly</button>
+                <button class="chip" type="button" data-interest="Nightlife">Nightlife</button>
+                <button class="chip" type="button" data-interest="Shopping">Shopping</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button id="generate-btn" class="primary-btn" type="submit">Generate itinerary</button>
+            <span class="hint">Uses live place data, then AI organizes the route.</span>
+          </div>
+          <div id="status-note" class="status-note" role="status"></div>
+        </form>
+      </section>
+
+      <section id="results" class="results" aria-label="Generated itinerary preview">
+        <div>
+          <div class="section-title">
+            <div>
+              <h2 id="trip-title">California family trip</h2>
+              <p id="trip-subtitle">5 days · 2 adults, 1 child · moderate budget · balanced pace</p>
+            </div>
+            <button id="regenerate-all" class="ghost-btn" type="button">Regenerate all</button>
+          </div>
+
+          <div id="day-stack" class="day-stack">
+            <article class="day-card">
+              <header class="day-head">
+                <div>
+                  <h3>Day 1 · San Francisco bay and waterfront</h3>
+                  <div class="day-meta">Easy arrival day · big views without a rushed pace</div>
+                </div>
+                <button class="small-btn" type="button">Regenerate day</button>
+              </header>
+
+              <div class="activity">
+                <div class="time">9:30 AM</div>
+                <div>
+                  <h4>Breakfast near the Ferry Building</h4>
+                  <p>Start central, easy, and flexible after arrival with coffee, pastries, and bay views nearby.</p>
+                  <div class="tags">
+                    <span class="tag">Food</span>
+                    <span class="tag">30-45 min</span>
+                    <span class="tag">$$</span>
+                  </div>
+                </div>
+                <button class="small-btn" type="button">Swap</button>
+              </div>
+
+              <div class="activity">
+                <div class="time">11:00 AM</div>
+                <div>
+                  <h4>Explore the Embarcadero</h4>
+                  <p>Short waterfront walk with wide paths, skyline views, and plenty of snack stops nearby.</p>
+                  <div class="tags">
+                    <span class="tag">Waterfront</span>
+                    <span class="tag">Kid-friendly</span>
+                    <span class="tag">Maps link</span>
+                  </div>
+                </div>
+                <button class="small-btn" type="button">Swap</button>
+              </div>
+
+              <div class="activity">
+                <div class="time">3:30 PM</div>
+                <div>
+                  <h4>Pier 39 and aquarium area</h4>
+                  <p>A softer afternoon with bay views, family-friendly attractions, and an indoor backup if energy dips.</p>
+                  <div class="tags">
+                    <span class="tag">Bay views</span>
+                    <span class="tag">2 hrs</span>
+                    <span class="tag">Family</span>
+                  </div>
+                </div>
+                <button class="small-btn" type="button">Swap</button>
+              </div>
+            </article>
+
+            <article class="day-card">
+              <header class="day-head">
+                <div>
+                  <h3>Day 2 · Golden Gate and redwoods</h3>
+                  <div class="day-meta">Nature day · reserve ahead if visiting popular sites</div>
+                </div>
+                <button class="small-btn" type="button">Regenerate day</button>
+              </header>
+
+              <div class="activity">
+                <div class="time">10:00 AM</div>
+                <div>
+                  <h4>Golden Gate Bridge overlook</h4>
+                  <p>Begin with classic California views and a short photo stop before heading toward greener space.</p>
+                  <div class="tags">
+                    <span class="tag">Scenic</span>
+                    <span class="tag">Outdoors</span>
+                    <span class="tag">Reserve</span>
+                  </div>
+                </div>
+                <button class="small-btn" type="button">Swap</button>
+              </div>
+
+              <div class="activity">
+                <div class="time">2:00 PM</div>
+                <div>
+                  <h4>Muir Woods or a nearby redwood grove</h4>
+                  <p>Anchor the afternoon with towering trees, shaded trails, and enough quiet time for a relaxed dinner later.</p>
+                  <div class="tags">
+                    <span class="tag">Must-see</span>
+                    <span class="tag">90 min</span>
+                    <span class="tag">Maps link</span>
+                  </div>
+                </div>
+                <button class="small-btn" type="button">Swap</button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <aside class="side" aria-label="Trip sidebar">
+          <section class="side-card">
+            <div id="map-preview" class="map">
+              Google Map Preview
+              <span>Route pins update after you generate a trip.</span>
+            </div>
+          </section>
+
+          <section class="side-card">
+            <h2>Trip summary</h2>
+            <ul class="summary-list">
+              <li><span>Total activities</span><strong id="total-activities">16</strong></li>
+              <li><span>Average pace</span><strong id="summary-pace">Balanced</strong></li>
+              <li><span>Estimated cost</span><strong id="summary-budget">Moderate</strong></li>
+              <li><span>Best for</span><strong id="summary-best-for">Families</strong></li>
+            </ul>
+          </section>
+
+          <section class="side-card share-box">
+            <h2>Private link</h2>
+            <p class="hint">Anyone with this link can view the itinerary for 90 days.</p>
+            <div id="share-url" class="share-url">vacationplanner.app/t/8xK2pQm19</div>
+            <button id="copy-share" class="primary-btn" type="button">Copy share link</button>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="shell footer-inner">
+        <div class="footer-brand">
+          <div class="logo">
+            <span class="logo-mark">VP</span>
+            <span>Vacation Planner</span>
+          </div>
+          <p>
+            Build thoughtful day-by-day itineraries with verified places,
+            traveler-aware pacing, and a private link you can share with your group.
+          </p>
+        </div>
+
+        <div>
+          <h3>Plan</h3>
+          <ul class="footer-links">
+            <li><a href="#">Create itinerary</a></li>
+            <li><a href="#">Sample trips</a></li>
+            <li><a href="#">Family travel</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Support</h3>
+          <ul class="footer-links">
+            <li><a href="#">How it works</a></li>
+            <li><a href="#">Trip privacy</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Company</h3>
+          <ul class="footer-links">
+            <li><a href="#">About</a></li>
+            <li><a href="#">Terms</a></li>
+            <li><a href="#">Privacy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="shell footer-bottom">
+        <span>© 2026 Vacation Planner. Made for easier getaways.</span>
+        <div class="footer-badges" aria-label="Footer trust badges">
+          <span class="tag">Google Maps ready</span>
+          <span class="tag">90-day links</span>
+          <span class="tag">No account needed</span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const form = document.querySelector("#planner-form");
+      const generateBtn = document.querySelector("#generate-btn");
+      const dayStack = document.querySelector("#day-stack");
+      const tripTitle = document.querySelector("#trip-title");
+      const tripSubtitle = document.querySelector("#trip-subtitle");
+      const totalActivities = document.querySelector("#total-activities");
+      const summaryPace = document.querySelector("#summary-pace");
+      const summaryBudget = document.querySelector("#summary-budget");
+      const summaryBestFor = document.querySelector("#summary-best-for");
+      const mapPreview = document.querySelector("#map-preview");
+      const shareUrl = document.querySelector("#share-url");
+      const statusNote = document.querySelector("#status-note");
+      const regenerateAll = document.querySelector("#regenerate-all");
+      const copyShare = document.querySelector("#copy-share");
+
+      const timesByPace = {
+        Relaxed: ["10:00 AM", "1:00 PM", "4:00 PM"],
+        Balanced: ["9:30 AM", "12:30 PM", "3:30 PM"],
+        Packed: ["8:30 AM", "11:00 AM", "2:00 PM", "5:30 PM"],
+      };
+
+      const themes = [
+        "arrival and local flavor",
+        "landmarks and scenic views",
+        "museums and culture",
+        "parks and neighborhoods",
+        "food, markets, and sunset",
+        "hidden gems and easy wandering",
+        "signature sights and final favorites",
+        "coast, viewpoints, and slow moments",
+        "history, shopping, and cafes",
+        "open-air adventures",
+      ];
+
+      const californiaActivities = [
+        {
+          title: "Breakfast near the Ferry Building",
+          description:
+            "Start central, easy, and flexible after arrival with coffee, pastries, and bay views nearby.",
+          tags: ["Food", "30-45 min", "$$"],
+        },
+        {
+          title: "Explore the Embarcadero",
+          description:
+            "Take a wide waterfront walk with skyline views, public art, and plenty of snack stops.",
+          tags: ["Waterfront", "Kid-friendly", "Maps link"],
+        },
+        {
+          title: "Pier 39 and aquarium area",
+          description:
+            "Keep the afternoon playful with bay views, family-friendly attractions, and an indoor backup.",
+          tags: ["Bay views", "2 hrs", "Family"],
+        },
+        {
+          title: "Golden Gate Bridge overlook",
+          description:
+            "Get classic California views with a short photo stop before heading into greener space.",
+          tags: ["Scenic", "Outdoors", "Must-see"],
+        },
+        {
+          title: "Muir Woods or a nearby redwood grove",
+          description:
+            "Walk shaded trails under towering trees and leave enough quiet time for dinner later.",
+          tags: ["Nature", "Reserve", "90 min"],
+        },
+        {
+          title: "California Academy of Sciences",
+          description:
+            "A strong museum pick for mixed ages, with science exhibits, indoor space, and easy park access.",
+          tags: ["Museums", "Kid-friendly", "Indoor"],
+        },
+        {
+          title: "Golden Gate Park picnic break",
+          description:
+            "Add a slower block for lunch, open space, and room for kids to reset before the next stop.",
+          tags: ["Outdoors", "Relaxed", "$"],
+        },
+        {
+          title: "Sunset at Ocean Beach",
+          description:
+            "End the day with ocean air, a simple dinner nearby, and a gentle close instead of overpacking.",
+          tags: ["Sunset", "Coast", "Low cost"],
+        },
+      ];
+
+      const genericActivities = [
+        {
+          title: "Breakfast in a central neighborhood",
+          description:
+            "Start somewhere easy to reach so the group can settle in and adjust the pace for the day.",
+          tags: ["Food", "Easy start", "$$"],
+        },
+        {
+          title: "Main landmark orientation walk",
+          description:
+            "See the destination's signature area first, then use nearby cafes or shops as flexible breaks.",
+          tags: ["Must-see", "Maps link", "Walking"],
+        },
+        {
+          title: "Local museum or cultural stop",
+          description:
+            "Add a focused indoor activity that gives the trip context without taking over the whole day.",
+          tags: ["Museums", "Culture", "Indoor"],
+        },
+        {
+          title: "Market lunch or casual food hall",
+          description:
+            "Choose a flexible meal stop with multiple options so different travelers can find something they like.",
+          tags: ["Food", "Group-friendly", "$$"],
+        },
+        {
+          title: "Park, garden, or viewpoint break",
+          description:
+            "Balance sightseeing with open space and a lighter activity block before dinner.",
+          tags: ["Outdoors", "Scenic", "Relaxed"],
+        },
+        {
+          title: "Historic district wander",
+          description:
+            "Explore smaller streets, local shops, and a few photogenic stops without a tight schedule.",
+          tags: ["History", "Shopping", "Flexible"],
+        },
+        {
+          title: "Neighborhood dinner",
+          description:
+            "Close the day with a restaurant area that has backup options nearby in case plans change.",
+          tags: ["Food", "Dinner", "Maps link"],
+        },
+        {
+          title: "Evening viewpoint or dessert stop",
+          description:
+            "Add one simple after-dinner moment for travelers who still have energy.",
+          tags: ["Nightlife", "Dessert", "Optional"],
+        },
+      ];
+
+      let currentTrip = null;
+      let generationCount = 0;
+
+      function getTripInput() {
+        const interests = Array.from(document.querySelectorAll(".chip.active"))
+          .map((chip) => chip.dataset.interest);
+
+        return {
+          destination: form.destination.value.trim() || "California, USA",
+          startDate: form["start-date"].value,
+          days: Number.parseInt(form.days.value, 10),
+          adults: Number.parseInt(form.adults.value, 10) || 1,
+          children: Number.parseInt(form.children.value, 10) || 0,
+          budget: form.budget.value,
+          pace: form.pace.value,
+          interests: interests.length ? interests : ["Food", "Museums", "Kid-friendly"],
+        };
+      }
+
+      function titleCase(text) {
+        return text
+          .split(" ")
+          .filter(Boolean)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      }
+
+      function destinationLabel(destination) {
+        return destination.split(",")[0].trim() || "Your destination";
+      }
+
+      function isCalifornia(destination) {
+        return /california|san francisco|los angeles|san diego|yosemite|monterey|napa/i.test(destination);
+      }
+
+      function poolFor(destination) {
+        return isCalifornia(destination) ? californiaActivities : genericActivities;
+      }
+
+      function activityCountFor(pace) {
+        return timesByPace[pace].length;
+      }
+
+      function costTag(budget) {
+        if (budget === "Budget") return "$";
+        if (budget === "Premium") return "$$$";
+        return "$$";
+      }
+
+      function bestFor(input) {
+        if (input.children > 0) return "Families";
+        if (input.adults >= 5) return "Groups";
+        return "Couples";
+      }
+
+      function tripAudienceLabel(input) {
+        if (input.children > 0) return "family";
+        if (input.adults >= 5) return "group";
+        return "couples";
+      }
+
+      function makeShareToken(input) {
+        const source = `${input.destination}-${input.days}-${input.adults}-${input.children}-${Date.now()}`;
+        let hash = 0;
+        for (let index = 0; index < source.length; index += 1) {
+          hash = ((hash << 5) - hash + source.charCodeAt(index)) | 0;
+        }
+        return Math.abs(hash).toString(36).padStart(8, "0");
+      }
+
+      function chooseActivity(pool, dayIndex, activityIndex, interests, variant = 0) {
+        const preferred = pool.filter((activity) =>
+          activity.tags.some((tag) => interests.includes(tag))
+        );
+        const usablePool = preferred.length >= 3 ? preferred.concat(pool) : pool;
+        const offset = dayIndex * 3 + activityIndex + variant + generationCount;
+        return usablePool[offset % usablePool.length];
+      }
+
+      function buildDay(input, dayIndex, variant = 0) {
+        const pool = poolFor(input.destination);
+        const count = activityCountFor(input.pace);
+        const times = timesByPace[input.pace];
+        const dayTheme = themes[(dayIndex + variant + generationCount) % themes.length];
+
+        const activities = Array.from({ length: count }, (_, activityIndex) => {
+          const base = chooseActivity(pool, dayIndex, activityIndex, input.interests, variant);
+          const tags = Array.from(new Set([...base.tags, costTag(input.budget)])).slice(0, 3);
+
+          return {
+            ...base,
+            time: times[activityIndex],
+            tags,
+            variant,
+          };
+        });
+
+        return {
+          title: `Day ${dayIndex + 1} · ${titleCase(dayTheme)}`,
+          meta:
+            input.children > 0
+              ? "Family-aware pacing · breaks built in"
+              : `${input.pace} pace · grouped by nearby areas`,
+          activities,
+          variant,
+        };
+      }
+
+      function buildTrip(input) {
+        generationCount += 1;
+        const days = Array.from({ length: input.days }, (_, dayIndex) => buildDay(input, dayIndex));
+
+        return {
+          input,
+          days,
+          shareToken: makeShareToken(input),
+          createdAt: new Date(),
+        };
+      }
+
+      function renderTrip(trip) {
+        const input = trip.input;
+        const destination = destinationLabel(input.destination);
+        const travelerText = `${input.adults} adult${input.adults === 1 ? "" : "s"}, ${input.children} child${input.children === 1 ? "" : "ren"}`;
+        const activitiesCount = trip.days.reduce((total, day) => total + day.activities.length, 0);
+
+        tripTitle.textContent = `${destination} ${tripAudienceLabel(input)} trip`;
+        tripSubtitle.textContent = `${input.days} days · ${travelerText} · ${input.budget.toLowerCase()} budget · ${input.pace.toLowerCase()} pace`;
+        totalActivities.textContent = activitiesCount;
+        summaryPace.textContent = input.pace;
+        summaryBudget.textContent = input.budget;
+        summaryBestFor.textContent = bestFor(input);
+        shareUrl.textContent = `vacationplanner.app/t/${trip.shareToken}`;
+        mapPreview.innerHTML = `
+          ${destination} Route Preview
+          <span>${activitiesCount} suggested stops clustered across ${input.days} day${input.days === 1 ? "" : "s"}.</span>
+        `;
+
+        dayStack.innerHTML = trip.days.map((day, dayIndex) => renderDay(day, dayIndex)).join("");
+      }
+
+      function renderDay(day, dayIndex) {
+        return `
+          <article class="day-card">
+            <header class="day-head">
+              <div>
+                <h3>${day.title}</h3>
+                <div class="day-meta">${day.meta}</div>
+              </div>
+              <button class="small-btn" type="button" data-action="regen-day" data-day="${dayIndex}">Regenerate day</button>
+            </header>
+            ${day.activities
+              .map(
+                (activity, activityIndex) => `
+                  <div class="activity">
+                    <div class="time">${activity.time}</div>
+                    <div>
+                      <h4>${activity.title}</h4>
+                      <p>${activity.description}</p>
+                      <div class="tags">
+                        ${activity.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}
+                      </div>
+                    </div>
+                    <button class="small-btn" type="button" data-action="swap-activity" data-day="${dayIndex}" data-activity="${activityIndex}">Swap</button>
+                  </div>
+                `
+              )
+              .join("")}
+          </article>
+        `;
+      }
+
+      function showStatus(message) {
+        statusNote.textContent = message;
+        statusNote.classList.add("show");
+        window.setTimeout(() => statusNote.classList.remove("show"), 2400);
+      }
+
+      function generateTrip(scrollToResults = true) {
+        generateBtn.disabled = true;
+        generateBtn.textContent = "Building trip...";
+
+        window.setTimeout(() => {
+          currentTrip = buildTrip(getTripInput());
+          renderTrip(currentTrip);
+          generateBtn.disabled = false;
+          generateBtn.textContent = "Generate itinerary";
+          showStatus("Itinerary generated. You can swap activities or regenerate a day.");
+
+          if (scrollToResults) {
+            document.querySelector("#results").scrollIntoView({ behavior: "smooth" });
+          }
+        }, 350);
+      }
+
+      document.querySelectorAll(".chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          chip.classList.toggle("active");
+        });
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        generateTrip();
+      });
+
+      regenerateAll.addEventListener("click", () => {
+        generateTrip(false);
+      });
+
+      dayStack.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button || !currentTrip) return;
+
+        const dayIndex = Number.parseInt(button.dataset.day, 10);
+
+        if (button.dataset.action === "regen-day") {
+          const currentDay = currentTrip.days[dayIndex];
+          currentTrip.days[dayIndex] = buildDay(currentTrip.input, dayIndex, currentDay.variant + 1);
+          renderTrip(currentTrip);
+          showStatus(`Day ${dayIndex + 1} regenerated.`);
+        }
+
+        if (button.dataset.action === "swap-activity") {
+          const activityIndex = Number.parseInt(button.dataset.activity, 10);
+          const day = currentTrip.days[dayIndex];
+          const nextVariant = day.activities[activityIndex].variant + 1;
+          const replacement = chooseActivity(
+            poolFor(currentTrip.input.destination),
+            dayIndex,
+            activityIndex,
+            currentTrip.input.interests,
+            nextVariant
+          );
+          day.activities[activityIndex] = {
+            ...replacement,
+            time: day.activities[activityIndex].time,
+            tags: Array.from(new Set([...replacement.tags, costTag(currentTrip.input.budget)])).slice(0, 3),
+            variant: nextVariant,
+          };
+          renderTrip(currentTrip);
+          showStatus("Activity swapped.");
+        }
+      });
+
+      copyShare.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl.textContent);
+          copyShare.textContent = "Copied";
+          window.setTimeout(() => {
+            copyShare.textContent = "Copy share link";
+          }, 1600);
+        } catch {
+          showStatus("Copy is blocked in this browser, but the link is visible above.");
+        }
+      });
+
+      document.querySelector(".nav-actions .ghost-btn").addEventListener("click", () => {
+        document.querySelector("#results").scrollIntoView({ behavior: "smooth" });
+      });
+
+      document.querySelector(".nav-actions .primary-btn").addEventListener("click", () => {
+        form.scrollIntoView({ behavior: "smooth" });
+        form.destination.focus();
+      });
+
+      generateTrip(false);
+    </script>
+  </body>
+</html>
