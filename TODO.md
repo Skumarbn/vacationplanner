@@ -32,9 +32,25 @@ Reason:
 
 Agents should not add map/places provider integrations unless explicitly reassigned.
 
+## Roadmap Snapshot
+
+- P0: Improve exact-place itinerary quality and add output validation/repair without adding external place-data APIs.
+- P1: Finish the V1 local save/share UX around the existing `localStorage` and `#trip=<token>` model.
+- P1: Add real validation, clearer error states, and automated tests so iteration can continue safely.
+- P2: Expand regeneration controls and export once quality and reliability are stable.
+
+## Current Agent Handoff
+
+- AI + Backend: Finish item 1, then item 2, then item 12. Preserve the current no-database and no-Places-API V1 scope.
+- Frontend + UX: Finish item 3, then item 4, then item 7. Keep the existing warm design and do not touch `ui-prototype.html`.
+- Testing + Release: Start item 14 after backend validation contracts settle, then item 13, then item 15.
+- Branch Manager: Review and merge only documentation-safe requirement changes first, then queue implementation branches in P0 to P1 order.
+
 ## 1. Exact Place Generation With OpenAI
 
-Status: Not started
+Status: Partial
+Priority: P0
+Agent owner: AI + Backend
 
 Goal: Make OpenAI generate exact, recognizable place names for any destination without using a Maps/Places API.
 
@@ -58,9 +74,16 @@ Dependencies:
 
 - Needs `OPENAI_API_KEY` for real AI behavior.
 
+Progress notes:
+
+- Prompt already asks for exact, visitable place names and `mapQuery`.
+- Demo fallback only has strong exact-place coverage for San Francisco; generic destinations still fall back to placeholder-style activities.
+
 ## 2. AI Itinerary Quality Pipeline
 
-Status: Not started
+Status: Partial
+Priority: P0
+Agent owner: AI + Backend
 
 Goal: Improve the `/api/itinerary` generation flow so AI output is specific, practical, and consistent.
 
@@ -86,9 +109,17 @@ Dependencies:
 
 - Best after item 1.
 
+Progress notes:
+
+- JSON schema output is already defined in `lib/itinerary.ts`.
+- Regenerate-day and swap-activity flows already preserve unrelated sections in demo mode and API shape.
+- Validation, generic-title detection, and retry/repair logic are still missing.
+
 ## 3. Local Trip Storage
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: Frontend + UX
 
 Goal: Keep saved trips in browser `localStorage` for V1, but make it reliable and easy to understand.
 
@@ -111,9 +142,16 @@ Dependencies:
 
 - None, but coordinate with item 4.
 
+Progress notes:
+
+- Trips already save to `localStorage` and reload from `#trip=<token>` in the same browser.
+- Current payload only stores `savedAt`; created/updated timestamps, delete/list helpers, and clearer local-only UX are still missing.
+
 ## 4. Local Share Links
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: Frontend + UX
 
 Goal: Improve current browser-local share links without backend persistence.
 
@@ -135,9 +173,16 @@ Dependencies:
 
 - Best after item 3.
 
+Progress notes:
+
+- Share links already use `/#trip=<token>`, support copy, and show a friendly unknown-token message.
+- Portable sharing is still weak because there is no copy-itinerary-text option yet.
+
 ## 5. Next.js + TypeScript Migration
 
 Status: Completed
+Priority: Completed baseline
+Agent owner: Branch Manager
 
 Goal: Move from plain HTML/CSS/JS to a maintainable app framework.
 
@@ -172,7 +217,9 @@ Completion notes:
 
 ## 6. Form Validation
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: AI + Backend
 
 Goal: Add friendly client and server validation.
 
@@ -196,9 +243,17 @@ Dependencies:
 
 - None.
 
+Progress notes:
+
+- Server already normalizes and clamps numeric inputs and rejects empty destinations.
+- Form fields already apply basic browser constraints.
+- Inline UI errors and structured server validation responses are still missing.
+
 ## 7. Better Loading And Error States
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: Frontend + UX
 
 Goal: Improve UX while generation is running or fails.
 
@@ -220,9 +275,16 @@ Dependencies:
 
 - None.
 
+Progress notes:
+
+- Generation buttons already disable while requests are in flight and status text is shown.
+- Skeleton states, retry affordances, and more specific provider messaging are still missing.
+
 ## 8. Advanced Regeneration Controls
 
-Status: Not started
+Status: Partial
+Priority: P2
+Agent owner: AI + Backend
 
 Goal: Let users steer itinerary changes more precisely.
 
@@ -246,9 +308,16 @@ Dependencies:
 
 - Best after item 2 for AI quality.
 
+Progress notes:
+
+- `generate`, `regenerate-day`, and `swap-activity` are already implemented in UI and API.
+- The remaining steering actions and target validation are still missing.
+
 ## 9. Google Maps Search Link Polish
 
-Status: Not started
+Status: Partial
+Priority: P2
+Agent owner: Frontend + UX
 
 Goal: Keep map support simple with useful external search links, not embedded map APIs.
 
@@ -269,9 +338,16 @@ Dependencies:
 
 - None.
 
+Progress notes:
+
+- Every activity already links to a Google Maps search using `mapQuery`.
+- Day-level helpers and clearer Google Maps-specific labeling are still optional polish, not blockers.
+
 ## 10. Itinerary Quality Rules
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: AI + Backend
 
 Goal: Prevent low-quality or impractical plans.
 
@@ -293,9 +369,16 @@ Dependencies:
 
 - Can start now.
 
+Progress notes:
+
+- Prompt and fallback logic already nudge activity counts, family pacing, and rough grouping.
+- There is no post-generation enforcement for duplicates, overloaded days, or impossible jumps yet.
+
 ## 11. Activity Details Enrichment Without Places API
 
 Status: Not started
+Priority: P2
+Agent owner: AI + Backend
 
 Goal: Show richer AI-generated activity details while avoiding provider/API dependence.
 
@@ -323,7 +406,9 @@ Dependencies:
 
 ## 12. Provider Error Handling
 
-Status: Not started
+Status: Partial
+Priority: P1
+Agent owner: AI + Backend
 
 Goal: Make external service failures understandable.
 
@@ -343,9 +428,16 @@ Dependencies:
 
 - Best after item 2.
 
+Progress notes:
+
+- The API already returns a basic `{ error }` response and the UI surfaces that message.
+- Distinct provider failure classes, fallback clarity, and structured error types are still missing.
+
 ## 13. Environment And Config
 
-Status: Not started
+Status: Partial
+Priority: P2
+Agent owner: Testing + Release
 
 Goal: Make local setup clear and predictable.
 
@@ -367,9 +459,16 @@ Dependencies:
 
 - Coordinate with item 3.
 
+Progress notes:
+
+- `README.md` already documents `OPENAI_API_KEY` and `OPENAI_MODEL`.
+- `.env.example`, startup validation, and fuller config docs are still missing.
+
 ## 14. Testing
 
 Status: Not started
+Priority: P1
+Agent owner: Testing + Release
 
 Goal: Add automated confidence.
 
@@ -395,6 +494,8 @@ Dependencies:
 ## 15. Deployment
 
 Status: Not started
+Priority: P2
+Agent owner: Testing + Release
 
 Goal: Prepare app for hosting.
 
@@ -418,6 +519,8 @@ Dependencies:
 ## 16. Security And Rate Limits
 
 Status: Not started
+Priority: P2
+Agent owner: AI + Backend
 
 Goal: Protect API keys and avoid abuse.
 
@@ -442,6 +545,8 @@ Dependencies:
 ## 17. Mobile Polish
 
 Status: Not started
+Priority: P2
+Agent owner: Frontend + UX
 
 Goal: Improve small-screen trip planning.
 
@@ -466,6 +571,8 @@ Dependencies:
 ## 18. User Feedback Loop
 
 Status: Not started
+Priority: Later
+Agent owner: Frontend + UX
 
 Goal: Let users steer future generations.
 
@@ -488,6 +595,8 @@ Dependencies:
 ## 19. Trip Export
 
 Status: Not started
+Priority: P2
+Agent owner: Frontend + UX
 
 Goal: Let users take the itinerary elsewhere.
 
@@ -511,6 +620,8 @@ Dependencies:
 ## 20. Future Accounts
 
 Status: Not started
+Priority: Later
+Agent owner: Product Owner / Branch Manager
 
 Goal: Add user accounts later if needed.
 
