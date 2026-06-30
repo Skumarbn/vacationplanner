@@ -1,6 +1,16 @@
 export type Budget = "Budget" | "Moderate" | "Premium";
 export type Pace = "Relaxed" | "Balanced" | "Packed";
-export type ItineraryAction = "generate" | "regenerate-day" | "swap-activity";
+export type ItineraryAction =
+  | "generate"
+  | "regenerate-day"
+  | "swap-activity"
+  | "relax-day"
+  | "cheaper-day"
+  | "kid-friendly-activity"
+  | "remove-activity";
+
+export type ActivitySetting = "Indoor" | "Outdoor" | "Mixed";
+export type FamilyFriendlyLevel = "High" | "Medium" | "Low";
 
 export type TripInput = {
   destination: string;
@@ -21,6 +31,10 @@ export type Activity = {
   cost: string;
   tags: string[];
   mapQuery: string;
+  neighborhood?: string;
+  bookingHint?: string;
+  setting?: ActivitySetting;
+  familyFriendly?: FamilyFriendlyLevel;
 };
 
 export type ItineraryDay = {
@@ -63,6 +77,16 @@ export type ItineraryResponse = {
   model: string;
 };
 
+export type ApiErrorCode =
+  | "validation_error"
+  | "invalid_destination"
+  | "provider_error"
+  | "rate_limited"
+  | "malformed_response"
+  | "demo_fallback";
+
 export type ApiError = {
   error: string;
+  code?: ApiErrorCode;
+  details?: Record<string, string>;
 };
