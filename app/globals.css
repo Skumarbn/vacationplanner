@@ -265,12 +265,29 @@ select:focus {
 
 .status-note {
   margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 14px;
   border-radius: 16px;
-  background: #e6fffb;
-  color: var(--accent);
   font-size: 14px;
   font-weight: 800;
+}
+
+.status-note.info {
+  background: #fff5e8;
+  color: var(--brand-dark);
+}
+
+.status-note.success {
+  background: #e6fffb;
+  color: var(--accent);
+}
+
+.status-note.error {
+  background: #fff1ef;
+  color: #b42318;
 }
 
 .results {
@@ -343,6 +360,71 @@ select:focus {
 
 .activity:last-child {
   border-bottom: 0;
+}
+
+.skeleton-card {
+  overflow: hidden;
+}
+
+.skeleton-activity {
+  align-items: start;
+}
+
+.skeleton-block,
+.skeleton-tag,
+.skeleton-chip {
+  position: relative;
+  overflow: hidden;
+  color: transparent;
+}
+
+.skeleton-block::after,
+.skeleton-tag::after,
+.skeleton-chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.35s ease-in-out infinite;
+}
+
+.skeleton-block {
+  border-radius: 999px;
+  background: #efe7da;
+}
+
+.skeleton-block.short {
+  width: 72px;
+  height: 18px;
+  margin-top: 6px;
+}
+
+.skeleton-block.title {
+  width: min(280px, 92%);
+  height: 20px;
+  margin-bottom: 10px;
+}
+
+.skeleton-block.body {
+  width: 100%;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-block.body.narrow {
+  width: 78%;
+}
+
+.skeleton-tag {
+  min-width: 70px;
+  min-height: 24px;
+  background: #efe7da;
+}
+
+.skeleton-chip {
+  background: #f4eadb;
+  color: transparent;
 }
 
 .time {
@@ -520,6 +602,12 @@ select:focus {
   color: var(--brand-dark);
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .footer-bottom {
   display: flex;
   align-items: center;
@@ -557,6 +645,11 @@ select:focus {
 }
 
 @media (max-width: 620px) {
+  .nav {
+    gap: 14px;
+    align-items: stretch;
+  }
+
   .nav-actions {
     display: none;
   }
@@ -572,7 +665,8 @@ select:focus {
 
   .submit-row,
   .section-title,
-  .day-head {
+  .day-head,
+  .status-note {
     align-items: stretch;
     flex-direction: column;
   }
@@ -585,6 +679,21 @@ select:focus {
   .ghost-btn,
   .small-btn {
     width: 100%;
+  }
+
+  .day-card {
+    border-radius: 22px;
+  }
+
+  .day-head,
+  .activity,
+  .side-card {
+    padding: 16px;
+  }
+
+  .share-url {
+    white-space: normal;
+    word-break: break-word;
   }
 
   .footer-inner,

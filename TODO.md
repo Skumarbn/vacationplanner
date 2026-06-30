@@ -220,6 +220,18 @@ Dependencies:
 
 - None.
 
+Progress notes:
+
+- Generation buttons already disable while requests are in flight and status text is shown.
+- Skeleton states, retry affordances, and more specific provider messaging are still missing.
+- Added action-specific loading copy, first-load day skeleton cards, and an inline retry button in `app/page.tsx`.
+- Status messaging now distinguishes info/success/error states and maps common provider/network failures to clearer UI copy without changing the API contract yet.
+- Mobile spacing was tightened for stacked status/day-card layouts while preserving the existing warm visual style.
+
+Verification notes:
+
+- `npm run build` passed on June 29, 2026.
+- Manual local browser check on `http://localhost:3001` confirmed trip-length changes still render 1-day and 2-day itineraries correctly after the loading/error-state updates.
 ## 8. Advanced Regeneration Controls
 
 Status: Not started
