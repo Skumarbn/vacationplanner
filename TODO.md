@@ -641,3 +641,9 @@ Acceptance checks:
 Dependencies:
 
 - Later-stage item. Do not start unless explicitly assigned.
+
+## Branch Manager Notes
+
+- 2026-06-29: Merged `agent/product-owner-20260628-requirements` into `main`.
+- Verification: `npm run build` passed on `agent/product-owner-20260628-requirements` and again on merged `main`.
+- Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
