@@ -34,7 +34,7 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## 1. Exact Place Generation With OpenAI
 
-Status: Not started
+Status: Partial
 
 Goal: Make OpenAI generate exact, recognizable place names for any destination without using a Maps/Places API.
 
@@ -58,9 +58,15 @@ Dependencies:
 
 - Needs `OPENAI_API_KEY` for real AI behavior.
 
+Progress notes:
+
+- Strengthened the OpenAI prompt to require exact place names, named areas, and Google-Maps-ready `mapQuery` values.
+- Added stronger destination-specific demo catalogs for San Francisco, New York City, and Paris instead of generic placeholder activities.
+- Full OpenAI verification is still blocked until `OPENAI_API_KEY` is available.
+
 ## 2. AI Itinerary Quality Pipeline
 
-Status: Not started
+Status: Partial
 
 Goal: Improve the `/api/itinerary` generation flow so AI output is specific, practical, and consistent.
 
@@ -86,9 +92,15 @@ Dependencies:
 
 - Best after item 1.
 
+Progress notes:
+
+- Added itinerary inspection for day count, generic titles, duplicate places, and missing required activity fields.
+- OpenAI generation now retries once with repair instructions when the first response is malformed or too generic.
+- A repair pass now normalizes notes, day counts, and missing activity fields before returning API data.
+
 ## 3. Local Trip Storage
 
-Status: Not started
+Status: Partial
 
 Goal: Keep saved trips in browser `localStorage` for V1, but make it reliable and easy to understand.
 
@@ -196,9 +208,15 @@ Dependencies:
 
 - None.
 
+Progress notes:
+
+- Server now rejects invalid destination, days, adults, and children values with structured field errors instead of silently clamping them.
+- Form fields already apply basic browser constraints.
+- Inline UI errors are still missing.
+
 ## 7. Better Loading And Error States
 
-Status: Not started
+Status: Partial
 
 Goal: Improve UX while generation is running or fails.
 
@@ -258,9 +276,15 @@ Dependencies:
 
 - Best after item 2 for AI quality.
 
+Progress notes:
+
+- Backend action support now includes `relax-day`, `cheaper-day`, `kid-friendly-activity`, and `remove-activity`.
+- API now validates supported action names plus day/activity targets before applying changes.
+- Frontend controls for the new actions are still missing.
+
 ## 9. Google Maps Search Link Polish
 
-Status: Not started
+Status: Partial
 
 Goal: Keep map support simple with useful external search links, not embedded map APIs.
 
@@ -305,9 +329,14 @@ Dependencies:
 
 - Can start now.
 
+Progress notes:
+
+- Added repair rules to avoid generic duplicate places and cap family packed days at 3 activities.
+- Demo generation now keeps family trips lighter and preserves the verify-before-going disclaimer.
+
 ## 11. Activity Details Enrichment Without Places API
 
-Status: Not started
+Status: Partial
 
 Goal: Show richer AI-generated activity details while avoiding provider/API dependence.
 
@@ -333,9 +362,15 @@ Dependencies:
 
 - Best after item 2.
 
+Progress notes:
+
+- Added backend/schema support for `neighborhood`, `bookingHint`, `setting`, and `familyFriendly` activity fields.
+- Demo generation now fills these fields without inventing exact hours, prices, or addresses.
+- UI rendering for the new fields is still pending.
+
 ## 12. Provider Error Handling
 
-Status: Not started
+Status: Partial
 
 Goal: Make external service failures understandable.
 
@@ -354,6 +389,11 @@ Acceptance checks:
 Dependencies:
 
 - Best after item 2.
+
+Progress notes:
+
+- API errors now return structured `code` and `details` fields for validation, provider, rate-limit, and malformed-response cases.
+- Provider messages are sanitized before returning them to the browser.
 
 ## 13. Environment And Config
 
@@ -450,6 +490,13 @@ Acceptance checks:
 Dependencies:
 
 - None.
+
+Verification notes:
+
+- `npm run build` passed on June 29, 2026.
+- `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...generate...` returned enriched demo itinerary data including `mapQuery`, `neighborhood`, `bookingHint`, `setting`, and `familyFriendly`.
+- `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...invalid action...` returned `validation_error` with supported actions.
+- `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...invalid tripInput...` returned field-level validation details for destination, days, adults, and children.
 
 ## 17. Mobile Polish
 

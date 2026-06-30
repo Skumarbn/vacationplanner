@@ -1,17 +1,30 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { generateItinerary, normalizeTripInput } from "@/lib/itinerary";
-import type { ItineraryAction, ItineraryRequest } from "@/lib/types";
+import { generateItinerary, ItineraryError, normalizeTripInput } from "@/lib/itinerary";
+import type { ApiError, ItineraryAction, ItineraryRequest } from "@/lib/types";
 
-const allowedActions: ItineraryAction[] = ["generate", "regenerate-day", "swap-activity"];
+const allowedActions: ItineraryAction[] = [
+  "generate",
+  "regenerate-day",
+  "swap-activity",
+  "relax-day",
+  "cheaper-day",
+  "kid-friendly-activity",
+  "remove-activity",
+];
 
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as ItineraryRequest;
+    const requestedAction = payload.action || "generate";
+    if (!allowedActions.includes(requestedAction)) {
+      throw new ItineraryError("validation_error", "Unsupported itinerary action.", 400, {
+        action: `Supported actions: ${allowedActions.join(", ")}`,
+      });
+    }
+
     const input = normalizeTripInput(payload.tripInput);
-    const action = allowedActions.includes(payload.action as ItineraryAction)
-      ? (payload.action as ItineraryAction)
-      : "generate";
+    const action = requestedAction as ItineraryAction;
 
     const result = await generateItinerary({
       input,
@@ -28,7 +41,28 @@ export async function POST(request: Request) {
       model: result.model,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to generate itinerary.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const apiError = serializeError(error);
+    return NextResponse.json(apiError.body, { status: apiError.status });
   }
+}
+
+function serializeError(error: unknown): { status: number; body: ApiError } {
+  if (error instanceof ItineraryError) {
+    return {
+      status: error.status,
+      body: {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+      },
+    };
+  }
+
+  return {
+    status: 400,
+    body: {
+      error: error instanceof Error ? error.message : "Unable to generate itinerary.",
+      code: "validation_error",
+    },
+  };
 }
