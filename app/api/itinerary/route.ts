@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { NextResponse } from "next/server";
-import { generateItinerary, normalizeTripInput } from "@/lib/itinerary";
-import type { ItineraryAction, ItineraryRequest } from "@/lib/types";
+import { NextResponse } from "next/server.js";
+import { generateItinerary, normalizeTripInput } from "../../../lib/itinerary.ts";
+import type { ItineraryAction, ItineraryRequest } from "../../../lib/types.ts";
 
 const allowedActions: ItineraryAction[] = ["generate", "regenerate-day", "swap-activity"];
 

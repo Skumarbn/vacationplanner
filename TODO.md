@@ -345,7 +345,7 @@ Dependencies:
 
 ## 13. Environment And Config
 
-Status: Not started
+Status: Completed
 
 Goal: Make local setup clear and predictable.
 
@@ -367,9 +367,20 @@ Dependencies:
 
 - Coordinate with item 3.
 
+Completion notes:
+
+- Expanded `.env.example` with `APP_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and `PORT` plus required vs optional guidance.
+- Updated `README.md` with local env setup, test instructions, and production env expectations.
+- Added `lib/env.ts` and `instrumentation.ts` so production startup fails clearly when `APP_URL` is missing or invalid.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+
 ## 14. Testing
 
-Status: Not started
+Status: Completed
 
 Goal: Add automated confidence.
 
@@ -392,9 +403,21 @@ Dependencies:
 
 - None.
 
+Completion notes:
+
+- Added a built-in Node test runner via `npm test` with no OpenAI dependency.
+- Added unit coverage for trip input validation, 1-day and 2-day fallback itinerary generation, and regeneration behavior in `tests/itinerary.test.ts`.
+- Added integration coverage for `POST /api/itinerary` and `GET /api/health` in `tests/routes.test.ts`.
+- Kept tests independent from real provider calls by exercising demo-mode behavior only.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+
 ## 15. Deployment
 
-Status: Not started
+Status: Completed
 
 Goal: Prepare app for hosting.
 
@@ -414,6 +437,18 @@ Acceptance checks:
 Dependencies:
 
 - Better after item 3 if persistent storage is required.
+
+Completion notes:
+
+- Chose Vercel as the initial deployment target in `README.md`.
+- Added `/api/health` for deployment checks.
+- Documented deployment environment variables and demo-mode behavior in `README.md`.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- `GET /api/health` covered in `tests/routes.test.ts`
 
 ## 16. Security And Rate Limits
 
