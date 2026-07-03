@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ApiError,
+  ApiErrorCode,
   Budget,
   ItineraryAction,
   ItineraryResponse,
@@ -25,17 +26,35 @@ const defaultInput: TripInput = {
 };
 
 type SavedTrip = ItineraryResponse & {
+  createdAt: string;
   savedAt: string;
+  updatedAt: string;
+};
+
+type PendingRequest = {
+  action: ItineraryAction;
+  target: ItineraryTarget;
+  input: TripInput;
+};
+
+type StatusBanner = {
+  tone: "info" | "success" | "error";
+  title: string;
+  message: string;
+  details?: string[];
+  canRetry?: boolean;
 };
 
 export default function Home() {
   const [tripInput, setTripInput] = useState<TripInput>(defaultInput);
   const [payload, setPayload] = useState<ItineraryResponse | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [status, setStatus] = useState("");
+  const [statusBanner, setStatusBanner] = useState<StatusBanner | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const activeRequestId = useRef(0);
+  const statusTimeoutRef = useRef<number | null>(null);
+  const lastRequestRef = useRef<PendingRequest | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
 
@@ -76,7 +95,14 @@ export default function Home() {
   ) {
     const requestId = (activeRequestId.current += 1);
     const requestInput = inputOverride || tripInput;
+    const pendingRequest = { action, target, input: requestInput };
+    lastRequestRef.current = pendingRequest;
     setIsLoading(true);
+    showBanner({
+      tone: "info",
+      title: loadingTitle(action, target),
+      message: loadingMessage(action, target),
+    });
 
     try {
       const response = await fetch("/api/itinerary", {
@@ -94,7 +120,7 @@ export default function Home() {
       const nextPayload = (await response.json()) as ItineraryResponse | ApiError;
 
       if (!response.ok || "error" in nextPayload) {
-        throw new Error("error" in nextPayload ? nextPayload.error : "Unable to generate itinerary.");
+        throw nextPayload;
       }
 
       if (requestId !== activeRequestId.current) return;
@@ -102,14 +128,20 @@ export default function Home() {
       setPayload(nextPayload);
       setToken(nextPayload.token);
       saveTrip(nextPayload);
-      showStatus(
-        nextPayload.generatedBy === "openai"
-          ? `Generated with ${nextPayload.model}.`
-          : "Demo itinerary generated. Add OPENAI_API_KEY for real AI.",
+      showBanner(
+        {
+          tone: "success",
+          title: nextPayload.generatedBy === "openai" ? "Trip ready" : "Demo trip ready",
+          message:
+            nextPayload.generatedBy === "openai"
+              ? `Generated with ${nextPayload.model}.`
+              : "Generated in demo mode. Add OPENAI_API_KEY to switch to real AI.",
+        },
+        3200,
       );
     } catch (error) {
       if (requestId === activeRequestId.current) {
-        showStatus(error instanceof Error ? error.message : "Something went wrong.");
+        showBanner(buildErrorBanner(error, pendingRequest));
       }
     } finally {
       if (requestId === activeRequestId.current) {
@@ -119,11 +151,18 @@ export default function Home() {
   }
 
   function saveTrip(nextPayload: ItineraryResponse) {
+    const storageKey = `vacationplanner:${nextPayload.token}`;
+    const previousTrip = localStorage.getItem(storageKey);
+    const previousPayload = previousTrip ? (JSON.parse(previousTrip) as SavedTrip) : null;
+    const createdAt = previousPayload?.createdAt || previousPayload?.savedAt || new Date().toISOString();
+
     localStorage.setItem(
-      `vacationplanner:${nextPayload.token}`,
+      storageKey,
       JSON.stringify({
         ...nextPayload,
+        createdAt,
         savedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       } satisfies SavedTrip),
     );
   }
@@ -134,7 +173,11 @@ export default function Home() {
 
     const saved = localStorage.getItem(`vacationplanner:${match[1]}`);
     if (!saved) {
-      showStatus("This trip link is not saved in this browser.");
+      showBanner({
+        tone: "error",
+        title: "Trip not found",
+        message: "This local trip link is not saved in this browser anymore.",
+      });
       return false;
     }
 
@@ -142,13 +185,31 @@ export default function Home() {
     setPayload(savedPayload);
     setToken(savedPayload.token);
     setTripInput(savedPayload.tripInput);
-    showStatus("Loaded saved trip.");
+    showBanner(
+      {
+        tone: "success",
+        title: "Saved trip loaded",
+        message: "This itinerary was restored from browser storage.",
+      },
+      2800,
+    );
     return true;
   }
 
-  function showStatus(message: string) {
-    setStatus(message);
-    window.setTimeout(() => setStatus(""), 3600);
+  function showBanner(nextBanner: StatusBanner | null, timeoutMs?: number) {
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+
+    setStatusBanner(nextBanner);
+
+    if (nextBanner && timeoutMs) {
+      statusTimeoutRef.current = window.setTimeout(() => {
+        setStatusBanner(null);
+        statusTimeoutRef.current = null;
+      }, timeoutMs);
+    }
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -172,8 +233,18 @@ export default function Home() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
-      showStatus("Copy is blocked in this browser, but the link is visible above.");
+      showBanner({
+        tone: "error",
+        title: "Copy blocked",
+        message: "Clipboard access is blocked here, but the local link is still visible above.",
+      });
     }
+  }
+
+  function retryLastRequest() {
+    const lastRequest = lastRequestRef.current;
+    if (!lastRequest || isLoading) return;
+    void requestItinerary(lastRequest.action, lastRequest.target, lastRequest.input);
   }
 
   return (
@@ -342,15 +413,22 @@ export default function Home() {
               </button>
               <span className="hint">Uses OpenAI when configured, otherwise demo mode.</span>
             </div>
-            {status ? (
-              <div className="status-note" role="status">
-                {status}
-              </div>
+            {statusBanner ? (
+              <StatusCard
+                banner={statusBanner}
+                isLoading={isLoading}
+                onRetry={statusBanner.canRetry ? retryLastRequest : undefined}
+              />
             ) : null}
           </form>
         </section>
 
-        <section ref={resultsRef} className="results" aria-label="Generated itinerary preview">
+        <section
+          ref={resultsRef}
+          className="results"
+          aria-label="Generated itinerary preview"
+          aria-busy={isLoading}
+        >
           <div>
             <div className="section-title">
               <div>
@@ -362,72 +440,78 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="day-stack">
-              {itinerary?.days.map((day, dayIndex) => (
-                <article className="day-card" key={`${day.title}-${dayIndex}`}>
-                  <header className="day-head">
-                    <div>
-                      <h3>{day.title}</h3>
-                      <div className="day-meta">{day.meta}</div>
-                    </div>
-                    <button
-                      className="small-btn"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={() => requestItinerary("regenerate-day", { dayIndex })}
-                    >
-                      Regenerate day
-                    </button>
-                  </header>
-                  {day.activities.map((activity, activityIndex) => (
-                    <div className="activity" key={`${activity.title}-${activityIndex}`}>
-                      <div className="time">{activity.time}</div>
+            {isLoading && !itinerary ? <DaySkeletonGroup dayCount={tripInput.days} /> : null}
+
+            {itinerary ? (
+              <div className="day-stack">
+                {itinerary.days.map((day, dayIndex) => (
+                  <article className={`day-card${isLoading ? " is-updating" : ""}`} key={`${day.title}-${dayIndex}`}>
+                    <header className="day-head">
                       <div>
-                        <h4>{activity.title}</h4>
-                        <p>{activity.description}</p>
-                        <div className="tags">
-                          {activity.tags.map((tag) => (
-                            <span className="tag" key={tag}>
-                              {tag}
-                            </span>
-                          ))}
-                          <span className="tag">{activity.duration}</span>
-                          <span className="tag">{activity.cost}</span>
+                        <h3>{day.title}</h3>
+                        <div className="day-meta">{day.meta}</div>
+                      </div>
+                      <button
+                        className="small-btn"
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => requestItinerary("regenerate-day", { dayIndex })}
+                      >
+                        Regenerate day
+                      </button>
+                    </header>
+                    {day.activities.map((activity, activityIndex) => (
+                      <div className="activity" key={`${activity.title}-${activityIndex}`}>
+                        <div className="time">{activity.time}</div>
+                        <div>
+                          <h4>{activity.title}</h4>
+                          <p>{activity.description}</p>
+                          <div className="tags">
+                            {activity.tags.map((tag) => (
+                              <span className="tag" key={tag}>
+                                {tag}
+                              </span>
+                            ))}
+                            <span className="tag">{activity.duration}</span>
+                            <span className="tag">{activity.cost}</span>
+                          </div>
+                        </div>
+                        <div className="activity-actions">
+                          <button
+                            className="small-btn"
+                            type="button"
+                            disabled={isLoading}
+                            onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
+                          >
+                            Swap
+                          </button>
+                          <a
+                            className="map-link"
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.mapQuery)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open map
+                          </a>
                         </div>
                       </div>
-                      <div className="activity-actions">
-                        <button
-                          className="small-btn"
-                          type="button"
-                          disabled={isLoading}
-                          onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
-                        >
-                          Swap
-                        </button>
-                        <a
-                          className="map-link"
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.mapQuery)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Open map
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </article>
-              ))}
-            </div>
+                    ))}
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <aside className="side" aria-label="Trip sidebar">
             <section className="side-card">
-              <div className="map">
+              <div className={`map${isLoading ? " map-loading" : ""}`}>
                 {itinerary?.destination || "Google Map Searches"}
                 <span>
                   {itinerary
                     ? `${itinerary.summary.activityCount} stops across ${itinerary.days.length} day${itinerary.days.length === 1 ? "" : "s"}.`
-                    : "Each activity includes a Maps search link."}
+                    : isLoading
+                      ? loadingMessage("generate", {})
+                      : "Each activity includes a Maps search link."}
                 </span>
               </div>
             </section>
@@ -481,6 +565,71 @@ export default function Home() {
 
       <Footer />
     </>
+  );
+}
+
+function StatusCard({
+  banner,
+  isLoading,
+  onRetry,
+}: {
+  banner: StatusBanner;
+  isLoading: boolean;
+  onRetry?: () => void;
+}) {
+  return (
+    <div className={`status-note status-${banner.tone}`} role={banner.tone === "error" ? "alert" : "status"}>
+      <div>
+        <strong>{banner.title}</strong>
+        <p>{banner.message}</p>
+        {banner.details?.length ? (
+          <ul className="status-list">
+            {banner.details.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      {banner.canRetry && onRetry ? (
+        <button className="small-btn" type="button" disabled={isLoading} onClick={onRetry}>
+          Retry
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function DaySkeletonGroup({ dayCount }: { dayCount: number }) {
+  return (
+    <div className="day-stack" aria-hidden="true">
+      {Array.from({ length: Math.min(Math.max(dayCount, 1), 2) }).map((_, dayIndex) => (
+        <article className="day-card day-skeleton-card" key={`skeleton-day-${dayIndex}`}>
+          <header className="day-head">
+            <div className="skeleton-block title" />
+            <div className="skeleton-block pill" />
+          </header>
+          {Array.from({ length: 3 }).map((_, activityIndex) => (
+            <div className="activity" key={`skeleton-activity-${dayIndex}-${activityIndex}`}>
+              <div className="skeleton-block time" />
+              <div className="activity-copy">
+                <div className="skeleton-block heading" />
+                <div className="skeleton-block line" />
+                <div className="skeleton-block line short" />
+                <div className="tags">
+                  <span className="skeleton-block chip" />
+                  <span className="skeleton-block chip" />
+                  <span className="skeleton-block chip" />
+                </div>
+              </div>
+              <div className="activity-actions">
+                <div className="skeleton-block button" />
+                <div className="skeleton-block link" />
+              </div>
+            </div>
+          ))}
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -540,4 +689,124 @@ function FooterColumn({ title, links }: { title: string; links: string[] }) {
       </ul>
     </div>
   );
+}
+
+function loadingTitle(action: ItineraryAction, target: ItineraryTarget) {
+  switch (action) {
+    case "regenerate-day":
+      return `Refreshing day ${(target.dayIndex ?? 0) + 1}`;
+    case "swap-activity":
+      return "Swapping one stop";
+    case "relax-day":
+      return `Relaxing day ${(target.dayIndex ?? 0) + 1}`;
+    case "cheaper-day":
+      return `Lowering the cost for day ${(target.dayIndex ?? 0) + 1}`;
+    case "kid-friendly-activity":
+      return "Finding a more kid-friendly stop";
+    case "remove-activity":
+      return "Tightening the plan";
+    default:
+      return "Building your itinerary";
+  }
+}
+
+function loadingMessage(action: ItineraryAction, target: ItineraryTarget) {
+  switch (action) {
+    case "regenerate-day":
+      return `Reworking day ${(target.dayIndex ?? 0) + 1} while keeping the rest of the trip intact.`;
+    case "swap-activity":
+      return "Looking for a better-matched activity and keeping the rest of the day steady.";
+    case "relax-day":
+      return `Reducing the pace for day ${(target.dayIndex ?? 0) + 1} without changing the full trip.`;
+    case "cheaper-day":
+      return `Adjusting day ${(target.dayIndex ?? 0) + 1} toward lower-cost stops.`;
+    case "kid-friendly-activity":
+      return "Replacing this stop with an option that fits children better.";
+    case "remove-activity":
+      return "Removing one stop and repairing the day around it.";
+    default:
+      return "Balancing stops, pacing, and map-ready place names for your trip.";
+  }
+}
+
+function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner {
+  if (isApiError(error)) {
+    const details = error.details ? Object.values(error.details) : undefined;
+
+    switch (error.code) {
+      case "validation_error":
+        return {
+          tone: "error",
+          title: "Trip details need attention",
+          message: "Fix the highlighted trip inputs and try again.",
+          details,
+        };
+      case "invalid_destination":
+        return {
+          tone: "error",
+          title: "Destination needs more detail",
+          message: "Try a specific city, region, or country so the planner can anchor the trip.",
+          details,
+          canRetry: true,
+        };
+      case "rate_limited":
+        return {
+          tone: "error",
+          title: "Planner is temporarily busy",
+          message: "Wait a moment, then retry the same request.",
+          canRetry: true,
+        };
+      case "provider_error":
+        return {
+          tone: "error",
+          title: "AI planner is unavailable",
+          message: "The trip service had a temporary issue. Retry the request without refreshing.",
+          canRetry: true,
+        };
+      case "malformed_response":
+        return {
+          tone: "error",
+          title: "Returned trip was unusable",
+          message: "The planner produced an incomplete response. Retry to generate a cleaner draft.",
+          canRetry: true,
+        };
+      case "demo_fallback":
+        return {
+          tone: "error",
+          title: "Switched to demo mode",
+          message: error.error,
+          canRetry: true,
+        };
+      default:
+        return {
+          tone: "error",
+          title: "Unable to update the trip",
+          message: error.error,
+          details,
+          canRetry: true,
+        };
+    }
+  }
+
+  return {
+    tone: "error",
+    title: actionFailureTitle(request.action),
+    message: error instanceof Error ? error.message : "Something went wrong while updating the trip.",
+    canRetry: true,
+  };
+}
+
+function actionFailureTitle(action: ItineraryAction) {
+  switch (action) {
+    case "regenerate-day":
+      return "Could not refresh that day";
+    case "swap-activity":
+      return "Could not swap this stop";
+    default:
+      return "Unable to generate the itinerary";
+  }
+}
+
+function isApiError(value: unknown): value is ApiError & { code?: ApiErrorCode } {
+  return typeof value === "object" && value !== null && "error" in value;
 }

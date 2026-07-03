@@ -279,8 +279,15 @@ Dependencies:
 
 Progress notes:
 
-- Generation buttons already disable while requests are in flight and status text is shown.
-- Skeleton states, retry affordances, and more specific provider messaging are still missing.
+- Generation buttons already disable while requests are in flight and now pair with action-specific loading banners.
+- Added itinerary skeleton cards for initial loads so the results area stays intentional while the first trip is generating.
+- Replaced transient status text with action-specific loading banners and persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures.
+- Existing itinerary cards now dim during refresh actions so regenerate/swap requests still preserve context for 1-day and 2-day trips.
+
+Verification notes:
+
+- `npm run build` passed on July 2, 2026 after adding skeleton states, retry UI, and structured provider error messaging.
+- Manual behavior note: the page now shows skeleton day cards before the first itinerary arrives, keeps prior itinerary content visible during regenerate/swap requests, and exposes a Retry button for recoverable API failures without requiring a refresh.
 
 ## 8. Advanced Regeneration Controls
 

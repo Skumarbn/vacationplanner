@@ -264,13 +264,149 @@ select:focus {
 }
 
 .status-note {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 16px;
+  font-size: 14px;
+}
+
+.status-note strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.status-note p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.status-success,
+.status-info {
   background: #e6fffb;
   color: var(--accent);
-  font-size: 14px;
-  font-weight: 800;
+}
+
+.status-error {
+  background: #fff1eb;
+  color: #b93815;
+}
+
+.status-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  line-height: 1.45;
+}
+
+.is-updating {
+  opacity: 0.7;
+}
+
+.day-skeleton-card {
+  overflow: hidden;
+}
+
+.skeleton-block {
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(234, 223, 206, 0.7) 20%, rgba(255, 255, 255, 0.96) 50%, rgba(234, 223, 206, 0.7) 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.1s linear infinite;
+}
+
+.skeleton-block.title {
+  width: 220px;
+  height: 24px;
+  border-radius: 12px;
+}
+
+.skeleton-block.pill {
+  width: 116px;
+  height: 34px;
+}
+
+.skeleton-block.heading {
+  width: 60%;
+  height: 18px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+}
+
+.skeleton-block.line {
+  width: 100%;
+  height: 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+}
+
+.skeleton-block.line.short {
+  width: 76%;
+  margin-bottom: 12px;
+}
+
+.skeleton-block.time {
+  width: 68px;
+  height: 16px;
+  margin-top: 2px;
+  border-radius: 8px;
+}
+
+.skeleton-block.chip {
+  width: 72px;
+  height: 24px;
+}
+
+.skeleton-block.button,
+.skeleton-block.link {
+  width: 92px;
+  height: 34px;
+}
+
+.skeleton-block.link {
+  height: 16px;
+  border-radius: 8px;
+}
+
+.activity-copy {
+  min-width: 0;
+}
+
+.map-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.map-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.46), transparent);
+  animation: sweep 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .results {
@@ -568,6 +704,10 @@ select:focus {
 
   .activity {
     gap: 8px;
+  }
+
+  .status-note {
+    flex-direction: column;
   }
 
   .submit-row,
