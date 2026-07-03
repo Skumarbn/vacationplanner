@@ -41,10 +41,10 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Current Agent Handoff
 
-- AI + Backend: Finish item 1, then item 2, then item 12. Preserve the current no-database and no-Places-API V1 scope.
-- Frontend + UX: Finish item 3, then item 4, then item 7. Keep the existing warm design and do not touch `ui-prototype.html`.
-- Testing + Release: Start item 14 after backend validation contracts settle, then item 13, then item 15.
-- Branch Manager: Review and merge only documentation-safe requirement changes first, then queue implementation branches in P0 to P1 order.
+- AI + Backend: Finish item 1 acceptance verification with a real `OPENAI_API_KEY`, then item 6, then item 12. Preserve the current no-database and no-Places-API V1 scope.
+- Frontend + UX: Finish item 3, then item 4, then item 11 so the richer activity fields become visible in the UI. Keep the existing warm design and do not touch `ui-prototype.html`.
+- Testing + Release: Start item 14 after `main` is pushed and the current API validation/error contract is treated as stable, then item 13, then item 15.
+- Branch Manager: Push current `main` to `origin` first, then queue frontend storage/share work ahead of new backend feature branches unless P0 verification fails.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -78,7 +78,7 @@ Progress notes:
 
 - Strengthened the OpenAI prompt to require exact place names, named areas, and Google-Maps-ready `mapQuery` values.
 - Added stronger destination-specific demo catalogs for San Francisco, New York City, and Paris instead of generic placeholder activities.
-- Full OpenAI verification is still blocked until `OPENAI_API_KEY` is available.
+- Full OpenAI acceptance verification is still blocked until `OPENAI_API_KEY` is available.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -115,6 +115,7 @@ Progress notes:
 - Added itinerary inspection for day count, generic titles, duplicate places, and missing required activity fields.
 - OpenAI generation now retries once with repair instructions when the first response is malformed or too generic.
 - A repair pass now normalizes notes, day counts, and missing activity fields before returning API data.
+- Current local `main` includes this pipeline work, but `origin/main` does not until a successful push/authenticated sync happens.
 
 ## 3. Local Trip Storage
 
@@ -248,7 +249,7 @@ Progress notes:
 
 - Server now rejects invalid destination, days, adults, and children values with structured field errors instead of silently clamping them.
 - Form fields already apply basic browser constraints.
-- Inline UI errors are still missing.
+- Inline UI errors and interest-selection guidance are still missing.
 
 ## 7. Better Loading And Error States
 
@@ -313,7 +314,7 @@ Progress notes:
 
 - Backend action support now includes `relax-day`, `cheaper-day`, `kid-friendly-activity`, and `remove-activity`.
 - API now validates supported action names plus day/activity targets before applying changes.
-- Frontend controls for the new actions are still missing.
+- Frontend controls for the new actions are still missing, so this is not yet user-complete.
 
 ## 9. Google Maps Search Link Polish
 
@@ -380,7 +381,7 @@ Progress notes:
 
 Status: Partial
 Priority: P2
-Agent owner: AI + Backend
+Agent owner: Frontend + UX
 
 Goal: Show richer AI-generated activity details while avoiding provider/API dependence.
 
@@ -410,7 +411,7 @@ Progress notes:
 
 - Added backend/schema support for `neighborhood`, `bookingHint`, `setting`, and `familyFriendly` activity fields.
 - Demo generation now fills these fields without inventing exact hours, prices, or addresses.
-- UI rendering for the new fields is still pending.
+- UI rendering for the new fields is still pending, which is now the main remaining work.
 
 ## 12. Provider Error Handling
 
@@ -662,3 +663,4 @@ Dependencies:
 - 2026-06-29: Merged `agent/product-owner-20260628-requirements` into `main`.
 - Verification: `npm run build` passed on `agent/product-owner-20260628-requirements` and again on merged `main`.
 - Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
+- 2026-07-02: Local `main` also includes `9b763fe` (`Improve itinerary validation and repair pipeline`), but `origin/main` is still at `e3b5694` until push authentication succeeds.
