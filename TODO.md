@@ -451,7 +451,7 @@ Progress notes:
 
 ## 13. Environment And Config
 
-Status: Partial
+Status: Completed
 Priority: P2
 Agent owner: Testing + Release
 
@@ -480,9 +480,20 @@ Progress notes:
 - `README.md` already documents `OPENAI_API_KEY` and `OPENAI_MODEL`.
 - `.env.example`, startup validation, and fuller config docs are still missing.
 
+Completion notes:
+
+- Expanded `.env.example` with `APP_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and `PORT` plus required-vs-optional guidance.
+- Added `lib/env.ts` and `instrumentation.ts` so production startup fails clearly when `APP_URL` is missing or invalid.
+- Updated `README.md` with local setup, test, and deployment environment expectations.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+
 ## 14. Testing
 
-Status: Not started
+Status: Completed
 Priority: P1
 Agent owner: Testing + Release
 
@@ -513,11 +524,23 @@ Verification notes:
 - `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...generate...` returned enriched demo itinerary data including `mapQuery`, `neighborhood`, `bookingHint`, `setting`, and `familyFriendly`.
 - `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...invalid action...` returned `validation_error` with supported actions.
 - `curl -sS -X POST http://127.0.0.1:3001/api/itinerary ...invalid tripInput...` returned field-level validation details for destination, days, adults, and children.
+
+Completion notes:
+
+- Added a built-in Node test runner via `npm test`.
+- Added unit coverage for trip input validation, 1-day and 2-day fallback itinerary generation, and regeneration behavior in `tests/itinerary.test.ts`.
+- Added integration coverage for `POST /api/itinerary` plus deployment health coverage for `GET /api/health` in `tests/routes.test.ts`.
+- Added a mocked-provider route test so no real OpenAI call is required when exercising the provider path.
+
+Additional verification notes:
+
+- `npm test`
+- `npm run build`
 - Reverified on July 2, 2026 from `main`: `npm run build` passed, demo generation still returned exact San Francisco place names plus enriched activity fields, and invalid action/input requests still returned structured `validation_error` responses.
 
 ## 15. Deployment
 
-Status: Not started
+Status: Completed
 Priority: P2
 Agent owner: Testing + Release
 
@@ -539,6 +562,18 @@ Acceptance checks:
 Dependencies:
 
 - Better after item 3 if persistent storage is required.
+
+Completion notes:
+
+- Chose Vercel as the initial deployment target in `README.md`.
+- Added `/api/health` for deployment checks and mode visibility.
+- Documented deployment environment variables and demo-mode behavior in `README.md`.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- `GET /api/health` covered in `tests/routes.test.ts`
 
 ## 16. Security And Rate Limits
 

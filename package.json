@@ -2,11 +2,13 @@
   "name": "vacationplanner",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "AI vacation itinerary planner",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test --experimental-strip-types --experimental-specifier-resolution=node tests/*.test.ts"
   },
   "dependencies": {
     "next": "^15.0.0",

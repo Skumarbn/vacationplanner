@@ -9,7 +9,7 @@ import type {
   ItineraryTarget,
   Pace,
   TripInput,
-} from "./types";
+} from "./types.ts";
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const defaultInterests = ["Food", "Museums", "Kid-friendly"];
@@ -508,11 +508,12 @@ function fallbackItinerary(
   }
 
   if (action === "swap-activity" && hasActivityTarget(target)) {
-    base.days[target.dayIndex!].activities[target.activityIndex!] = createFallbackActivity(
+    const currentActivity = base.days[target.dayIndex!].activities[target.activityIndex!];
+    base.days[target.dayIndex!].activities[target.activityIndex!] = createAlternativeActivity(
       input,
       target.dayIndex!,
       target.activityIndex!,
-      Date.now(),
+      currentActivity?.title,
     );
   }
 
@@ -827,6 +828,24 @@ function createFallbackActivity(
     },
     input,
   );
+}
+
+function createAlternativeActivity(
+  input: TripInput,
+  dayIndex: number,
+  activityIndex: number,
+  currentTitle?: string,
+): Activity {
+  const placeSet = getPlaceSet(input.destination);
+
+  for (let offset = 1; offset <= placeSet.activities.length; offset += 1) {
+    const candidate = createFallbackActivity(input, dayIndex, activityIndex, offset);
+    if (!currentTitle || candidate.title !== currentTitle) {
+      return candidate;
+    }
+  }
+
+  return createFallbackActivity(input, dayIndex, activityIndex, 1);
 }
 
 function createKidFriendlyActivity(
