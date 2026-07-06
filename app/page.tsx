@@ -1,6 +1,16 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  buildItineraryText,
+  buildLocalTripUrl,
+  deleteTripFromStorage,
+  listSavedTrips,
+  loadTripFromStorage,
+  parseTripTokenFromHash,
+  saveTripToStorage,
+  type SavedTrip,
+} from "@/lib/local-trip";
 import type {
   ApiError,
   ApiErrorCode,
@@ -28,12 +38,6 @@ const defaultInput: TripInput = {
 
 type FieldErrors = Partial<Record<"destination" | "days" | "adults" | "children" | "interests", string>>;
 
-type SavedTrip = ItineraryResponse & {
-  createdAt: string;
-  savedAt: string;
-  updatedAt: string;
-};
-
 type PendingRequest = {
   action: ItineraryAction;
   target: ItineraryTarget;
@@ -56,6 +60,7 @@ export default function Home() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedItinerary, setCopiedItinerary] = useState(false);
   const activeRequestId = useRef(0);
   const statusTimeoutRef = useRef<number | null>(null);
   const lastRequestRef = useRef<PendingRequest | null>(null);
@@ -66,8 +71,13 @@ export default function Home() {
 
   const shareLink = useMemo(() => {
     if (!payload?.token || typeof window === "undefined") return "Generate a trip first";
-    return `${window.location.origin}/#trip=${payload.token}`;
+    return buildLocalTripUrl(window.location.origin, payload.token);
   }, [payload?.token]);
+
+  const savedTrips = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    return listSavedTrips(window.localStorage);
+  }, [payload]);
 
   useEffect(() => {
     if (!loadSharedTrip()) {
@@ -187,37 +197,25 @@ export default function Home() {
   }
 
   function saveTrip(nextPayload: ItineraryResponse) {
-    const storageKey = `vacationplanner:${nextPayload.token}`;
-    const previousTrip = localStorage.getItem(storageKey);
-    const previousPayload = previousTrip ? (JSON.parse(previousTrip) as SavedTrip) : null;
-    const createdAt = previousPayload?.createdAt || previousPayload?.savedAt || new Date().toISOString();
-
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        ...nextPayload,
-        createdAt,
-        savedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      } satisfies SavedTrip),
-    );
+    const savedTrip = saveTripToStorage(localStorage, nextPayload);
+    window.location.hash = `trip=${encodeURIComponent(savedTrip.token)}`;
+    setPayload(savedTrip);
   }
 
   function loadSharedTrip() {
-    const match = window.location.hash.match(/trip=([^&]+)/);
-    if (!match) return false;
+    const tripToken = parseTripTokenFromHash(window.location.hash);
+    if (!tripToken) return false;
 
-    const saved = localStorage.getItem(`vacationplanner:${match[1]}`);
-    if (!saved) {
+    const savedPayload = loadTripFromStorage(localStorage, tripToken);
+    if (!savedPayload) {
       showBanner({
         tone: "error",
         title: "Trip not found",
-        message: "This local trip link is not saved in this browser anymore.",
+        message: "This local trip link works only in the same browser and is not saved here anymore.",
       });
       return false;
     }
 
-    const savedPayload = JSON.parse(saved) as SavedTrip;
     setPayload(savedPayload);
     setToken(savedPayload.token);
     setTripInput(savedPayload.tripInput);
@@ -286,6 +284,41 @@ export default function Home() {
         message: "Clipboard access is blocked here, but the local link is still visible above.",
       });
     }
+  }
+
+  async function copyItinerarySummary() {
+    if (!payload) return;
+
+    try {
+      await navigator.clipboard.writeText(buildItineraryText({ ...payload, tripInput }));
+      setCopiedItinerary(true);
+      window.setTimeout(() => setCopiedItinerary(false), 1600);
+    } catch {
+      showBanner({
+        tone: "error",
+        title: "Copy blocked",
+        message: "Clipboard access is blocked here, so the itinerary text could not be copied.",
+      });
+    }
+  }
+
+  function deleteCurrentTrip() {
+    if (!token) return;
+
+    deleteTripFromStorage(localStorage, token);
+    window.location.hash = "";
+    setPayload(null);
+    setToken(null);
+    setTripInput(defaultInput);
+    setFieldErrors({});
+    showBanner(
+      {
+        tone: "success",
+        title: "Local trip removed",
+        message: "This browser-only trip was deleted. Generate a new one to keep planning.",
+      },
+      2800,
+    );
   }
 
   function retryLastRequest() {
@@ -516,6 +549,14 @@ export default function Home() {
                         <div className="day-meta">{day.meta}</div>
                       </div>
                       <div className="day-actions">
+                        <a
+                          className="day-map-link"
+                          href={buildGoogleMapsSearchUrl(buildDayMapQuery(day, itinerary.destination))}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open day in Google Maps
+                        </a>
                         <button
                           className="small-btn"
                           type="button"
@@ -612,7 +653,7 @@ export default function Home() {
                           </div>
                           <a
                             className="map-link"
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.mapQuery)}`}
+                            href={buildGoogleMapsSearchUrl(activity.mapQuery)}
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -669,11 +710,34 @@ export default function Home() {
 
             <section className="side-card share-box">
               <h2>Private link</h2>
-              <p className="hint">Saved in this browser. Copy the link to reopen this local trip.</p>
+              <p className="hint">
+                Saved only in this browser. The link reopens the trip here, not on other devices or browsers.
+              </p>
               <div className="share-url">{shareLink}</div>
-              <button className="primary-btn" type="button" onClick={copyShareLink}>
-                {copied ? "Copied" : "Copy share link"}
-              </button>
+              <div className="share-actions">
+                <button className="primary-btn" type="button" onClick={copyShareLink}>
+                  {copied ? "Copied" : "Copy share link"}
+                </button>
+                <button
+                  className="ghost-btn"
+                  type="button"
+                  onClick={copyItinerarySummary}
+                  disabled={!payload}
+                >
+                  {copiedItinerary ? "Itinerary copied" : "Copy itinerary text"}
+                </button>
+                <button className="small-btn" type="button" onClick={deleteCurrentTrip} disabled={!token}>
+                  Delete local trip
+                </button>
+              </div>
+              {token ? (
+                <div className="share-meta">
+                  <span>{savedTrips.length} saved trip{savedTrips.length === 1 ? "" : "s"} in this browser</span>
+                  {"updatedAt" in (payload || {}) ? (
+                    <span>Last updated {new Date((payload as SavedTrip).updatedAt).toLocaleString()}</span>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
 
             <section className="side-card">
@@ -995,4 +1059,21 @@ function familyFriendlyLabel(level: "High" | "Medium" | "Low") {
     default:
       return "Better for adults";
   }
+}
+
+function buildGoogleMapsSearchUrl(query: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function buildDayMapQuery(day: ItineraryResponse["itinerary"]["days"][number], destination: string) {
+  const uniquePlaces = Array.from(
+    new Set(
+      day.activities
+        .map((activity) => activity.mapQuery.trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 3);
+
+  if (!uniquePlaces.length) return destination;
+  return `${day.title} ${destination} ${uniquePlaces.join(" ")}`;
 }

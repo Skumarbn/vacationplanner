@@ -119,7 +119,7 @@ Progress notes:
 
 ## 3. Local Trip Storage
 
-Status: Partial
+Status: Completed
 Priority: P1
 Agent owner: Frontend + UX
 
@@ -148,10 +148,18 @@ Progress notes:
 
 - Trips already save to `localStorage` and reload from `#trip=<token>` in the same browser.
 - Current payload only stores `savedAt`; created/updated timestamps, delete/list helpers, and clearer local-only UX are still missing.
+- Added `lib/local-trip.ts` helpers for save/load/delete/list operations with created/updated timestamps and optional expiry handling.
+- Saving a generated trip now updates the URL hash to `#trip=<token>`, so refresh reopens the same locally saved trip in the same browser.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Manual browser verification on July 6, 2026 at `http://127.0.0.1:3000`: generated trips update the URL to `#trip=<token>`, refresh preserves the loaded trip, and deleting the current local trip clears the active state without adding backend storage.
 
 ## 4. Local Share Links
 
-Status: Partial
+Status: Completed
 Priority: P1
 Agent owner: Frontend + UX
 
@@ -179,6 +187,13 @@ Progress notes:
 
 - Share links already use `/#trip=<token>`, support copy, and show a friendly unknown-token message.
 - Portable sharing is still weak because there is no copy-itinerary-text option yet.
+- Added a `Copy itinerary text` action and stronger local-only copy so users understand that browser-local links do not travel across devices or browsers.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Manual browser verification on July 6, 2026 at `http://127.0.0.1:3000`: `Copy share link`, `Copy itinerary text`, and `Delete local trip` all render together with the browser-local sharing explanation.
 
 ## 5. Next.js + TypeScript Migration
 
@@ -328,16 +343,17 @@ Progress notes:
 - Backend action support now includes `relax-day`, `cheaper-day`, `kid-friendly-activity`, and `remove-activity`.
 - API now validates supported action names plus day/activity targets before applying changes.
 - The itinerary UI now exposes day-level Relax day / Lower cost controls plus activity-level More kid-friendly / Remove controls on top of the existing regenerate and swap actions.
+- Manual browser verification on July 6, 2026 confirmed the new controls stay visible after trip generation and that switching between 1-day and 2-day trips still renders the correct number of day cards.
 
 Verification notes:
 
 - `npm test`
 - `npm run build`
-- Reverified on July 6, 2026: backend action validation still passes, and the production build includes visible controls for the new day/activity steering actions.
+- Reverified on July 6, 2026: backend action validation still passes, the production build includes the new day/activity steering controls, and browser checks confirmed 1-day and 2-day trip updates still render correctly.
 
 ## 9. Google Maps Search Link Polish
 
-Status: Partial
+Status: Completed
 Priority: P2
 Agent owner: Frontend + UX
 
@@ -363,7 +379,13 @@ Dependencies:
 Progress notes:
 
 - Every activity already links to a Google Maps search using `mapQuery`.
-- Day-level helpers and clearer Google Maps-specific labeling are still optional polish, not blockers.
+- Activity links now use explicit `Open in Google Maps` labeling instead of generic map copy.
+- Added a day-level `Open day in Google Maps` helper that bundles the strongest stop queries for quicker handoff to Google Maps without adding any map provider SDK.
+
+Verification notes:
+
+- `npm run build`
+- Manual browser check on July 6, 2026 at `http://127.0.0.1:3000`: per-activity `Open in Google Maps` links remained visible and each day now exposes an `Open day in Google Maps` helper in the day header.
 
 ## 10. Itinerary Quality Rules
 
@@ -431,12 +453,13 @@ Progress notes:
 - Added backend/schema support for `neighborhood`, `bookingHint`, `setting`, and `familyFriendly` activity fields.
 - Demo generation now fills these fields without inventing exact hours, prices, or addresses.
 - Activity cards now render neighborhood chips, indoor/outdoor setting, family-fit labels, and booking hints while keeping the verify-before-going guidance visible.
+- Manual browser verification on July 6, 2026 confirmed `Setting`, `Kid fit`, and `Booking hint` details render in generated cards and optional fields still omit cleanly when absent.
 
 Verification notes:
 
 - `npm test`
 - `npm run build`
-- Reverified on July 6, 2026: enriched activity fields render in the itinerary cards and continue to degrade gracefully when optional values are absent.
+- Reverified on July 6, 2026 at `http://127.0.0.1:3000`: enriched activity fields render in itinerary cards, `Open in Google Maps` labeling is visible, and optional values continue to degrade gracefully when absent.
 
 ## 12. Provider Error Handling
 
