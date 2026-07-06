@@ -34,17 +34,17 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Improve exact-place itinerary quality and add output validation/repair without adding external place-data APIs.
+- P0: Verify exact-place OpenAI output on real credentials and close any remaining specificity gaps without adding external place-data APIs.
+- P1: Expose the shipped richer activity schema and regeneration actions in the UI so backend work is user-visible.
 - P1: Finish the V1 local save/share UX around the existing `localStorage` and `#trip=<token>` model.
-- P1: Add real validation, clearer error states, and automated tests so iteration can continue safely.
-- P2: Expand regeneration controls and export once quality and reliability are stable.
+- P2: Add rate limits, mobile polish, and export once the core V1 planner loop is fully surfaced.
 
 ## Current Agent Handoff
 
-- AI + Backend: Finish item 1 acceptance verification with a real `OPENAI_API_KEY`, then item 6, then item 12. Preserve the current no-database and no-Places-API V1 scope.
-- Frontend + UX: Finish item 3, then item 4, then item 11 so the richer activity fields become visible in the UI. Keep the existing warm design and do not touch `ui-prototype.html`.
-- Testing + Release: Start item 14 after `main` is pushed and the current API validation/error contract is treated as stable, then item 13, then item 15.
-- Branch Manager: Push current `main` to `origin` first, then queue frontend storage/share work ahead of new backend feature branches unless P0 verification fails.
+- AI + Backend: Run item 1 acceptance verification with a real `OPENAI_API_KEY`, document destination-specific failures if any, then close the remaining item 6 client/server validation gaps without changing the no-database and no-Places-API V1 scope.
+- Frontend + UX: Finish item 11 first so enriched activity fields are visible, then item 8 by wiring the already-supported backend actions into the UI, then finish item 3 and item 4 local save/share polish.
+- Testing + Release: After `main` is pushed, re-run `npm test` and `npm run build` on the pushed head, then add verification coverage for the item 8/item 11 UI work as it lands.
+- Mainline Manager: Push current `main` to `origin`, keep `TODO.md` status aligned with merged evidence, and prioritize frontend visibility work before new backend-only feature branches unless item 1 verification fails.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -292,7 +292,7 @@ Verification notes:
 ## 8. Advanced Regeneration Controls
 
 Status: Partial
-Priority: P2
+Priority: P1
 Agent owner: AI + Backend
 
 Goal: Let users steer itinerary changes more precisely.
@@ -321,7 +321,7 @@ Progress notes:
 
 - Backend action support now includes `relax-day`, `cheaper-day`, `kid-friendly-activity`, and `remove-activity`.
 - API now validates supported action names plus day/activity targets before applying changes.
-- Frontend controls for the new actions are still missing, so this is not yet user-complete.
+- Frontend controls for the new actions are still missing, so the shipped backend support is not yet user-visible.
 
 ## 9. Google Maps Search Link Polish
 
@@ -448,6 +448,7 @@ Progress notes:
 
 - API errors now return structured `code` and `details` fields for validation, provider, rate-limit, and malformed-response cases.
 - Provider messages are sanitized before returning them to the browser.
+- The current UI also shows persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures; remaining acceptance risk is real-credential verification of the OpenAI-specific path.
 
 ## 13. Environment And Config
 
@@ -474,11 +475,6 @@ Acceptance checks:
 Dependencies:
 
 - Coordinate with item 3.
-
-Progress notes:
-
-- `README.md` already documents `OPENAI_API_KEY` and `OPENAI_MODEL`.
-- `.env.example`, startup validation, and fuller config docs are still missing.
 
 Completion notes:
 
@@ -706,4 +702,5 @@ Dependencies:
 - 2026-06-29: Merged `agent/product-owner-20260628-requirements` into `main`.
 - Verification: `npm run build` passed on `agent/product-owner-20260628-requirements` and again on merged `main`.
 - Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
-- 2026-07-02: Local `main` also includes `9b763fe` (`Improve itinerary validation and repair pipeline`), but `origin/main` is still at `e3b5694` until push authentication succeeds.
+- 2026-07-06: Fetched `origin`; `origin/main` is still `e3b5694` while local `main` is `74167f6`.
+- Local `main` is ahead with the validation/repair pipeline, loading/error-state UX, config/deployment updates, and automated route coverage; push is still required to make those changes available to other agents.
