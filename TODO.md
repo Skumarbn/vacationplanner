@@ -219,7 +219,7 @@ Completion notes:
 
 ## 6. Form Validation
 
-Status: Partial
+Status: Completed
 Priority: P1
 Agent owner: AI + Backend
 
@@ -248,8 +248,14 @@ Dependencies:
 Progress notes:
 
 - Server now rejects invalid destination, days, adults, and children values with structured field errors instead of silently clamping them.
-- Form fields already apply basic browser constraints.
-- Inline UI errors and interest-selection guidance are still missing.
+- The planner form now runs client-side validation before submitting, maps server-side `validation_error` details back to inline field errors, and highlights invalid inputs in place.
+- Empty interest selections now fall back safely to the default interest set with an explicit UI message instead of silently drifting from the server payload.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on July 6, 2026: invalid destination/count inputs are blocked in the client before fetch, server-side validation still returns structured field details, and empty interest selections restore default interests before generation.
 
 ## 7. Better Loading And Error States
 
@@ -291,7 +297,7 @@ Verification notes:
 
 ## 8. Advanced Regeneration Controls
 
-Status: Partial
+Status: Completed
 Priority: P1
 Agent owner: AI + Backend
 
@@ -321,7 +327,13 @@ Progress notes:
 
 - Backend action support now includes `relax-day`, `cheaper-day`, `kid-friendly-activity`, and `remove-activity`.
 - API now validates supported action names plus day/activity targets before applying changes.
-- Frontend controls for the new actions are still missing, so the shipped backend support is not yet user-visible.
+- The itinerary UI now exposes day-level Relax day / Lower cost controls plus activity-level More kid-friendly / Remove controls on top of the existing regenerate and swap actions.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on July 6, 2026: backend action validation still passes, and the production build includes visible controls for the new day/activity steering actions.
 
 ## 9. Google Maps Search Link Polish
 
@@ -386,7 +398,7 @@ Progress notes:
 
 ## 11. Activity Details Enrichment Without Places API
 
-Status: Partial
+Status: Completed
 Priority: P2
 Agent owner: Frontend + UX
 
@@ -418,7 +430,13 @@ Progress notes:
 
 - Added backend/schema support for `neighborhood`, `bookingHint`, `setting`, and `familyFriendly` activity fields.
 - Demo generation now fills these fields without inventing exact hours, prices, or addresses.
-- UI rendering for the new fields is still pending, which is now the main remaining work.
+- Activity cards now render neighborhood chips, indoor/outdoor setting, family-fit labels, and booking hints while keeping the verify-before-going guidance visible.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on July 6, 2026: enriched activity fields render in the itinerary cards and continue to degrade gracefully when optional values are absent.
 
 ## 12. Provider Error Handling
 

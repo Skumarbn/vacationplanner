@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 
 const interests = ["Food", "Museums", "Outdoors", "Kid-friendly", "Nightlife", "Shopping"];
+const defaultInterests = ["Food", "Museums", "Kid-friendly"];
 
 const defaultInput: TripInput = {
   destination: "California, USA",
@@ -24,6 +25,8 @@ const defaultInput: TripInput = {
   pace: "Balanced",
   interests: ["Food", "Museums", "Kid-friendly"],
 };
+
+type FieldErrors = Partial<Record<"destination" | "days" | "adults" | "children" | "interests", string>>;
 
 type SavedTrip = ItineraryResponse & {
   createdAt: string;
@@ -50,6 +53,7 @@ export default function Home() {
   const [payload, setPayload] = useState<ItineraryResponse | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [statusBanner, setStatusBanner] = useState<StatusBanner | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const activeRequestId = useRef(0);
@@ -74,6 +78,7 @@ export default function Home() {
 
   function updateInput<T extends keyof TripInput>(key: T, value: TripInput[T]) {
     setTripInput((current) => ({ ...current, [key]: value }));
+    clearFieldError(key);
   }
 
   function toggleInterest(interest: string) {
@@ -86,6 +91,7 @@ export default function Home() {
           : [...current.interests, interest],
       };
     });
+    clearFieldError("interests");
   }
 
   async function requestItinerary(
@@ -95,7 +101,33 @@ export default function Home() {
   ) {
     const requestId = (activeRequestId.current += 1);
     const requestInput = inputOverride || tripInput;
-    const pendingRequest = { action, target, input: requestInput };
+    const nextFieldErrors = validateTripInput(requestInput);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      showBanner({
+        tone: "error",
+        title: "Trip details need attention",
+        message: "Fix the highlighted trip inputs and try again.",
+        details: Object.values(nextFieldErrors),
+      });
+      return;
+    }
+
+    const requestInputWithDefaults = withDefaultInterests(requestInput);
+    if (requestInputWithDefaults !== requestInput) {
+      setTripInput(requestInputWithDefaults);
+      showBanner(
+        {
+          tone: "info",
+          title: "Default interests restored",
+          message: "Using Food, Museums, and Kid-friendly so the planner still has guidance.",
+        },
+        3200,
+      );
+    }
+
+    setFieldErrors({});
+    const pendingRequest = { action, target, input: requestInputWithDefaults };
     lastRequestRef.current = pendingRequest;
     setIsLoading(true);
     showBanner({
@@ -112,7 +144,7 @@ export default function Home() {
           action,
           target,
           token,
-          tripInput: requestInput,
+          tripInput: requestInputWithDefaults,
           existingItinerary: payload?.itinerary || null,
         }),
       });
@@ -127,6 +159,7 @@ export default function Home() {
 
       setPayload(nextPayload);
       setToken(nextPayload.token);
+      setTripInput(nextPayload.tripInput);
       saveTrip(nextPayload);
       showBanner(
         {
@@ -141,6 +174,9 @@ export default function Home() {
       );
     } catch (error) {
       if (requestId === activeRequestId.current) {
+        if (isApiError(error) && error.code === "validation_error") {
+          setFieldErrors(toFieldErrors(error.details));
+        }
         showBanner(buildErrorBanner(error, pendingRequest));
       }
     } finally {
@@ -185,6 +221,7 @@ export default function Home() {
     setPayload(savedPayload);
     setToken(savedPayload.token);
     setTripInput(savedPayload.tripInput);
+    setFieldErrors({});
     showBanner(
       {
         tone: "success",
@@ -222,9 +259,19 @@ export default function Home() {
   function onDaysChange(days: number) {
     const nextInput = { ...tripInput, days };
     setTripInput(nextInput);
+    clearFieldError("days");
     if (payload) {
       void requestItinerary("generate", {}, nextInput);
     }
+  }
+
+  function clearFieldError(field: keyof FieldErrors | keyof TripInput) {
+    setFieldErrors((current) => {
+      if (!(field in current)) return current;
+      const nextErrors = { ...current };
+      delete nextErrors[field as keyof FieldErrors];
+      return nextErrors;
+    });
   }
 
   async function copyShareLink() {
@@ -305,8 +352,10 @@ export default function Home() {
                   name="destination"
                   value={tripInput.destination}
                   required
+                  aria-invalid={Boolean(fieldErrors.destination)}
                   onChange={(event) => updateInput("destination", event.target.value)}
                 />
+                {fieldErrors.destination ? <p className="field-error">{fieldErrors.destination}</p> : null}
               </div>
 
               <div className="field">
@@ -326,6 +375,7 @@ export default function Home() {
                   id="days"
                   name="days"
                   value={tripInput.days}
+                  aria-invalid={Boolean(fieldErrors.days)}
                   onChange={(event) => onDaysChange(Number(event.target.value))}
                 >
                   {[1, 2, 3, 5, 7, 10].map((day) => (
@@ -334,6 +384,7 @@ export default function Home() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.days ? <p className="field-error">{fieldErrors.days}</p> : null}
               </div>
 
               <div className="field">
@@ -345,8 +396,10 @@ export default function Home() {
                   min="1"
                   max="20"
                   value={tripInput.adults}
+                  aria-invalid={Boolean(fieldErrors.adults)}
                   onChange={(event) => updateInput("adults", Number(event.target.value))}
                 />
+                {fieldErrors.adults ? <p className="field-error">{fieldErrors.adults}</p> : null}
               </div>
 
               <div className="field">
@@ -358,8 +411,10 @@ export default function Home() {
                   min="0"
                   max="20"
                   value={tripInput.children}
+                  aria-invalid={Boolean(fieldErrors.children)}
                   onChange={(event) => updateInput("children", Number(event.target.value))}
                 />
+                {fieldErrors.children ? <p className="field-error">{fieldErrors.children}</p> : null}
               </div>
 
               <div className="field">
@@ -404,6 +459,12 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
+                <p className={`field-note${fieldErrors.interests ? " is-error" : ""}`}>
+                  {fieldErrors.interests ||
+                    (tripInput.interests.length > 0
+                      ? `${tripInput.interests.length} interest${tripInput.interests.length === 1 ? "" : "s"} selected.`
+                      : "If none are selected, the planner restores default interests before generating.")}
+                </p>
               </div>
             </div>
 
@@ -444,6 +505,9 @@ export default function Home() {
 
             {itinerary ? (
               <div className="day-stack">
+                <div className="verify-banner" role="note">
+                  Verify hours, tickets, travel times, and availability before you go.
+                </div>
                 {itinerary.days.map((day, dayIndex) => (
                   <article className={`day-card${isLoading ? " is-updating" : ""}`} key={`${day.title}-${dayIndex}`}>
                     <header className="day-head">
@@ -451,21 +515,64 @@ export default function Home() {
                         <h3>{day.title}</h3>
                         <div className="day-meta">{day.meta}</div>
                       </div>
-                      <button
-                        className="small-btn"
-                        type="button"
-                        disabled={isLoading}
-                        onClick={() => requestItinerary("regenerate-day", { dayIndex })}
-                      >
-                        Regenerate day
-                      </button>
+                      <div className="day-actions">
+                        <button
+                          className="small-btn"
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => requestItinerary("relax-day", { dayIndex })}
+                        >
+                          Relax day
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => requestItinerary("cheaper-day", { dayIndex })}
+                        >
+                          Lower cost
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          disabled={isLoading}
+                          onClick={() => requestItinerary("regenerate-day", { dayIndex })}
+                        >
+                          Regenerate day
+                        </button>
+                      </div>
                     </header>
                     {day.activities.map((activity, activityIndex) => (
                       <div className="activity" key={`${activity.title}-${activityIndex}`}>
                         <div className="time">{activity.time}</div>
                         <div>
-                          <h4>{activity.title}</h4>
+                          <div className="activity-title-row">
+                            <h4>{activity.title}</h4>
+                            {activity.neighborhood ? (
+                              <span className="detail-chip detail-chip-location">{activity.neighborhood}</span>
+                            ) : null}
+                          </div>
                           <p>{activity.description}</p>
+                          <div className="detail-grid" aria-label="Activity details">
+                            {activity.setting ? (
+                              <div className="detail-card">
+                                <span className="detail-label">Setting</span>
+                                <strong>{activity.setting}</strong>
+                              </div>
+                            ) : null}
+                            {activity.familyFriendly ? (
+                              <div className="detail-card">
+                                <span className="detail-label">Kid fit</span>
+                                <strong>{familyFriendlyLabel(activity.familyFriendly)}</strong>
+                              </div>
+                            ) : null}
+                            {activity.bookingHint ? (
+                              <div className="detail-card detail-card-wide">
+                                <span className="detail-label">Booking hint</span>
+                                <strong>{activity.bookingHint}</strong>
+                              </div>
+                            ) : null}
+                          </div>
                           <div className="tags">
                             {activity.tags.map((tag) => (
                               <span className="tag" key={tag}>
@@ -477,21 +584,39 @@ export default function Home() {
                           </div>
                         </div>
                         <div className="activity-actions">
-                          <button
-                            className="small-btn"
-                            type="button"
-                            disabled={isLoading}
-                            onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
-                          >
-                            Swap
-                          </button>
+                          <div className="activity-action-group">
+                            <button
+                              className="small-btn"
+                              type="button"
+                              disabled={isLoading}
+                              onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
+                            >
+                              Swap
+                            </button>
+                            <button
+                              className="small-btn"
+                              type="button"
+                              disabled={isLoading}
+                              onClick={() => requestItinerary("kid-friendly-activity", { dayIndex, activityIndex })}
+                            >
+                              More kid-friendly
+                            </button>
+                            <button
+                              className="small-btn"
+                              type="button"
+                              disabled={isLoading}
+                              onClick={() => requestItinerary("remove-activity", { dayIndex, activityIndex })}
+                            >
+                              Remove
+                            </button>
+                          </div>
                           <a
                             className="map-link"
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.mapQuery)}`}
                             target="_blank"
                             rel="noreferrer"
                           >
-                            Open map
+                            Open in Google Maps
                           </a>
                         </div>
                       </div>
@@ -802,6 +927,14 @@ function actionFailureTitle(action: ItineraryAction) {
       return "Could not refresh that day";
     case "swap-activity":
       return "Could not swap this stop";
+    case "relax-day":
+      return "Could not relax this day";
+    case "cheaper-day":
+      return "Could not lower the cost for this day";
+    case "kid-friendly-activity":
+      return "Could not find a more kid-friendly stop";
+    case "remove-activity":
+      return "Could not remove this stop";
     default:
       return "Unable to generate the itinerary";
   }
@@ -809,4 +942,57 @@ function actionFailureTitle(action: ItineraryAction) {
 
 function isApiError(value: unknown): value is ApiError & { code?: ApiErrorCode } {
   return typeof value === "object" && value !== null && "error" in value;
+}
+
+function validateTripInput(input: TripInput): FieldErrors {
+  const nextErrors: FieldErrors = {};
+
+  if (!input.destination.trim()) {
+    nextErrors.destination = "Destination is required.";
+  }
+  if (!Number.isInteger(input.days) || input.days < 1 || input.days > 10) {
+    nextErrors.days = "Days must be between 1 and 10.";
+  }
+  if (!Number.isInteger(input.adults) || input.adults < 1 || input.adults > 20) {
+    nextErrors.adults = "Adults must be between 1 and 20.";
+  }
+  if (!Number.isInteger(input.children) || input.children < 0 || input.children > 20) {
+    nextErrors.children = "Children must be between 0 and 20.";
+  }
+
+  return nextErrors;
+}
+
+function withDefaultInterests(input: TripInput): TripInput {
+  if (input.interests.length > 0) {
+    return input;
+  }
+
+  return {
+    ...input,
+    interests: defaultInterests,
+  };
+}
+
+function toFieldErrors(details: ApiError["details"]): FieldErrors {
+  if (!details) return {};
+
+  const nextErrors: FieldErrors = {};
+  for (const field of ["destination", "days", "adults", "children", "interests"] as const) {
+    if (details[field]) {
+      nextErrors[field] = details[field];
+    }
+  }
+  return nextErrors;
+}
+
+function familyFriendlyLabel(level: "High" | "Medium" | "Low") {
+  switch (level) {
+    case "High":
+      return "Great for kids";
+    case "Medium":
+      return "Works for families";
+    default:
+      return "Better for adults";
+  }
 }

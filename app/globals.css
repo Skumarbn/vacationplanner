@@ -226,6 +226,12 @@ select:focus {
   box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.14);
 }
 
+input[aria-invalid="true"],
+select[aria-invalid="true"] {
+  border-color: rgba(185, 56, 21, 0.45);
+  box-shadow: 0 0 0 4px rgba(185, 56, 21, 0.08);
+}
+
 .interest-chips {
   display: flex;
   flex-wrap: wrap;
@@ -248,6 +254,22 @@ select:focus {
   border-color: rgba(15, 118, 110, 0.35);
   background: #e6fffb;
   color: var(--accent);
+}
+
+.field-error,
+.field-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.field-error,
+.field-note.is-error {
+  color: #b93815;
+}
+
+.field-note {
+  color: var(--muted);
 }
 
 .submit-row {
@@ -469,6 +491,23 @@ select:focus {
   font-size: 14px;
 }
 
+.day-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.verify-banner {
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 18px;
+  background: rgba(230, 255, 251, 0.72);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .activity {
   display: grid;
   grid-template-columns: 92px 1fr auto;
@@ -492,6 +531,14 @@ select:focus {
   letter-spacing: -0.025em;
 }
 
+.activity-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
 .activity p {
   margin: 0;
   color: var(--muted);
@@ -502,6 +549,59 @@ select:focus {
   display: grid;
   gap: 8px;
   align-content: start;
+  justify-items: end;
+}
+
+.activity-action-group {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-card {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(234, 223, 206, 0.92);
+  border-radius: 14px;
+  background: #fffaf6;
+}
+
+.detail-card strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.detail-card-wide {
+  grid-column: 1 / -1;
+}
+
+.detail-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detail-chip {
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.detail-chip-location {
+  background: #fff2e6;
+  color: var(--brand-dark);
 }
 
 .map-link {
@@ -715,6 +815,15 @@ select:focus {
   .day-head {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .day-actions,
+  .activity-actions {
+    justify-items: stretch;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
   }
 
   .activity-actions {
