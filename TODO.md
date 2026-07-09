@@ -34,17 +34,17 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Verify exact-place OpenAI output on real credentials and close any remaining specificity gaps without adding external place-data APIs.
-- P1: Expose the shipped richer activity schema and regeneration actions in the UI so backend work is user-visible.
-- P1: Finish the V1 local save/share UX around the existing `localStorage` and `#trip=<token>` model.
-- P2: Add rate limits, mobile polish, and export once the core V1 planner loop is fully surfaced.
+- P0: Verify exact-place OpenAI output and provider-error behavior on real credentials, then close any remaining specificity gaps without adding external place-data APIs.
+- P1: Finish itinerary quality guardrails for duplicates, geography, pacing, and repair behavior now that regeneration controls and enriched activity fields are already visible in the UI.
+- P1: Add the remaining V1 hardening work in backend safety and release coverage after the real-credential verification pass is complete.
+- P2: Add mobile polish plus print/export follow-through on top of the shipped local save/share flow.
 
 ## Current Agent Handoff
 
-- AI + Backend: Run item 1 acceptance verification with a real `OPENAI_API_KEY`, document destination-specific failures if any, then close the remaining item 6 client/server validation gaps without changing the no-database and no-Places-API V1 scope.
-- Frontend + UX: Finish item 11 first so enriched activity fields are visible, then item 8 by wiring the already-supported backend actions into the UI, then finish item 3 and item 4 local save/share polish.
-- Testing + Release: After `main` is pushed, re-run `npm test` and `npm run build` on the pushed head, then add verification coverage for the item 8/item 11 UI work as it lands.
-- Mainline Manager: Push current `main` to `origin`, keep `TODO.md` status aligned with merged evidence, and prioritize frontend visibility work before new backend-only feature branches unless item 1 verification fails.
+- AI + Backend: Run item 1 acceptance verification with a real `OPENAI_API_KEY`, then use the findings to finish item 2, item 10, and item 12 quality/repair gaps without changing the no-database and no-Places-API V1 scope.
+- Frontend + UX: Start item 17 mobile polish against the now-stable planner UI, then move item 19 from partial to complete by adding print/export surfaces that reuse the existing local itinerary data.
+- Testing + Release: Re-run `npm test` and `npm run build` after the next merged implementation change, then extend verification coverage toward the real-credential/provider path and upcoming mobile/export behavior.
+- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` status accuracy from merged evidence, and prioritize item 1 verification plus item 2/10/12 backend hardening before lower-priority net-new features.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -690,7 +690,7 @@ Dependencies:
 
 ## 19. Trip Export
 
-Status: Not started
+Status: Partial
 Priority: P2
 Agent owner: Frontend + UX
 
@@ -712,6 +712,11 @@ Acceptance checks:
 Dependencies:
 
 - None.
+
+Progress notes:
+
+- The `Copy itinerary text` action already shipped as part of the local share-link polish, so the remaining scope is print/export-specific presentation rather than basic text portability.
+- Print-friendly layout, PDF export, and calendar-oriented export text are still open.
 
 ## 20. Future Accounts
 
@@ -743,5 +748,5 @@ Dependencies:
 - 2026-06-29: Merged `agent/product-owner-20260628-requirements` into `main`.
 - Verification: `npm run build` passed on `agent/product-owner-20260628-requirements` and again on merged `main`.
 - Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
-- 2026-07-06: Fetched `origin`; `origin/main` is still `e3b5694` while local `main` is `74167f6`.
-- Local `main` is ahead with the validation/repair pipeline, loading/error-state UX, config/deployment updates, and automated route coverage; push is still required to make those changes available to other agents.
+- 2026-07-09: Fetched `origin`; local `main` and `origin/main` both point to `cb2ad9a`, so the current roadmap baseline is fully shared.
+- The highest-value unfinished work is now real-credential OpenAI verification plus the remaining itinerary quality/provider hardening tasks in items 1, 2, 10, and 12.
