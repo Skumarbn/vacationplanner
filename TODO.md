@@ -574,6 +574,7 @@ Additional verification notes:
 - `npm test`
 - `npm run build`
 - Reverified on July 2, 2026 from `main`: `npm run build` passed, demo generation still returned exact San Francisco place names plus enriched activity fields, and invalid action/input requests still returned structured `validation_error` responses.
+- Reverified on July 9, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for OpenAI retry/repair on generic first-pass output and sanitized authentication failures, and `npm run build` passed on Next.js 15.5.19.
 
 ## 15. Deployment
 

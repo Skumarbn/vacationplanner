@@ -201,6 +201,174 @@ test("POST /api/itinerary uses a mocked provider when OPENAI_API_KEY is set", as
   assert.equal(body.model, "gpt-5.4-mini");
 });
 
+test("POST /api/itinerary retries mocked provider output when the first response is too generic", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+  let callCount = 0;
+
+  global.fetch = async () => {
+    callCount += 1;
+
+    const outputText =
+      callCount === 1
+        ? JSON.stringify({
+            title: "San Francisco family trip",
+            summary: {
+              pace: "Balanced",
+              budget: "Moderate",
+              bestFor: "Families",
+              activityCount: 1,
+            },
+            destination: "San Francisco",
+            notes: ["Verify hours, tickets, and travel times before going."],
+            days: [
+              {
+                title: "Day 1",
+                meta: "Generic first pass",
+                activities: [
+                  {
+                    time: "9:00 AM",
+                    title: "Main landmark area",
+                    description: "A generic placeholder stop.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Sightseeing"],
+                    mapQuery: "San Francisco landmark",
+                    neighborhood: "Downtown",
+                    bookingHint: "Check ahead.",
+                    setting: "Outdoor",
+                    familyFriendly: "Medium",
+                  },
+                ],
+              },
+            ],
+          })
+        : JSON.stringify({
+            title: "San Francisco family trip",
+            summary: {
+              pace: "Balanced",
+              budget: "Moderate",
+              bestFor: "Families",
+              activityCount: 2,
+            },
+            destination: "San Francisco",
+            notes: ["Verify hours, tickets, and travel times before going."],
+            days: [
+              {
+                title: "Day 1",
+                meta: "Family-aware pacing",
+                activities: [
+                  {
+                    time: "9:00 AM",
+                    title: "California Academy of Sciences",
+                    description: "Start with the rainforest dome and aquarium exhibits.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Museums", "Kid-friendly"],
+                    mapQuery: "California Academy of Sciences San Francisco, CA",
+                    neighborhood: "Golden Gate Park",
+                    bookingHint: "Reserve timed entry if possible.",
+                    setting: "Indoor",
+                    familyFriendly: "High",
+                  },
+                  {
+                    time: "1:00 PM",
+                    title: "Ferry Building Marketplace",
+                    description: "Lunch with easy browsing along the Embarcadero.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Food", "Markets"],
+                    mapQuery: "Ferry Building Marketplace San Francisco, CA",
+                    neighborhood: "Embarcadero",
+                    bookingHint: "Go early for shorter lines.",
+                    setting: "Mixed",
+                    familyFriendly: "High",
+                  },
+                ],
+              },
+            ],
+          });
+
+    return new Response(JSON.stringify({ output_text: outputText }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 1,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums", "Kid-friendly"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(callCount, 2);
+
+  const body = (await response.json()) as {
+    itinerary: { days: Array<{ activities: Array<{ title: string }> }> };
+    generatedBy: string;
+  };
+  assert.equal(body.generatedBy, "openai");
+  assert.equal(body.itinerary.days[0].activities[0].title, "California Academy of Sciences");
+});
+
+test("POST /api/itinerary sanitizes provider authentication errors", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: "Invalid API key provided for authentication.",
+        },
+      }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  const body = (await response.json()) as Record<string, unknown>;
+  assert.equal(body.code, "provider_error");
+  assert.equal(body.error, "The itinerary provider rejected the request configuration.");
+});
+
 test("GET /api/health returns OK with the active mode", async () => {
   process.env.PORT = "3000";
   delete process.env.APP_URL;
