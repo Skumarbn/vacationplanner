@@ -614,7 +614,7 @@ Verification notes:
 
 ## 16. Security And Rate Limits
 
-Status: Not started
+Status: Completed
 Priority: P2
 Agent owner: AI + Backend
 
@@ -637,6 +637,18 @@ Acceptance checks:
 Dependencies:
 
 - None.
+
+Progress notes:
+
+- Added per-client in-memory rate limiting for `POST /api/itinerary`, including `Retry-After` and rate-limit response headers.
+- Added a server-side JSON request body cap so oversized itinerary payloads fail with a structured validation error before processing.
+- Kept provider handling server-only; the API returns sanitized error payloads without exposing keys or raw provider responses.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Automated route coverage now verifies repeated rapid requests return `429 rate_limited` and oversized JSON bodies return `413 validation_error`.
 
 ## 17. Mobile Polish
 

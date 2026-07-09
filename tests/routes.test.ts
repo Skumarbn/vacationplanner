@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { afterEach, beforeEach } from "node:test";
 import { GET as getHealth } from "../app/api/health/route.ts";
 import { POST as postItinerary } from "../app/api/itinerary/route.ts";
+import { resetRateLimitStore } from "../lib/rate-limit.ts";
 import type { ItineraryRequest } from "../lib/types.ts";
 
 function buildRequest(body: ItineraryRequest) {
@@ -12,9 +13,18 @@ function buildRequest(body: ItineraryRequest) {
   });
 }
 
-test("POST /api/itinerary returns a demo itinerary response", async () => {
+beforeEach(() => {
+  resetRateLimitStore();
   delete process.env.OPENAI_API_KEY;
+  delete process.env.ITINERARY_RATE_LIMIT_MAX_REQUESTS;
+});
 
+afterEach(() => {
+  delete process.env.OPENAI_API_KEY;
+  delete process.env.ITINERARY_RATE_LIMIT_MAX_REQUESTS;
+});
+
+test("POST /api/itinerary returns a demo itinerary response", async () => {
   const response = await postItinerary(
     buildRequest({
       action: "generate",
@@ -66,8 +76,6 @@ test("POST /api/itinerary rejects unsupported actions", async () => {
 });
 
 test("POST /api/itinerary preserves unrelated days during regeneration", async () => {
-  delete process.env.OPENAI_API_KEY;
-
   const initialResponse = await postItinerary(
     buildRequest({
       action: "generate",
@@ -169,7 +177,6 @@ test("POST /api/itinerary uses a mocked provider when OPENAI_API_KEY is set", as
 
   t.after(() => {
     global.fetch = originalFetch;
-    delete process.env.OPENAI_API_KEY;
   });
 
   const response = await postItinerary(
@@ -195,7 +202,6 @@ test("POST /api/itinerary uses a mocked provider when OPENAI_API_KEY is set", as
 });
 
 test("GET /api/health returns OK with the active mode", async () => {
-  delete process.env.OPENAI_API_KEY;
   process.env.PORT = "3000";
   delete process.env.APP_URL;
 
@@ -207,3 +213,65 @@ test("GET /api/health returns OK with the active mode", async () => {
   assert.equal(body.mode, "demo");
   assert.equal(body.appUrl, "http://127.0.0.1:3000");
 });
+
+test("POST /api/itinerary rate limits repeated requests from the same client", async () => {
+  process.env.ITINERARY_RATE_LIMIT_MAX_REQUESTS = "2";
+
+  const body: ItineraryRequest = {
+    action: "generate",
+    tripInput: {
+      destination: "San Francisco, CA",
+      startDate: "2026-08-12",
+      days: 1,
+      adults: 2,
+      children: 0,
+      budget: "Moderate",
+      pace: "Balanced",
+      interests: ["Food", "Museums"],
+    },
+  };
+
+  const headers = { "x-forwarded-for": "203.0.113.10" };
+  const first = await postItinerary(buildRequestWithHeaders(body, headers));
+  const second = await postItinerary(buildRequestWithHeaders(body, headers));
+  const third = await postItinerary(buildRequestWithHeaders(body, headers));
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.equal(third.status, 429);
+  assert.equal(third.headers.get("Retry-After"), "60");
+
+  const payload = (await third.json()) as Record<string, unknown>;
+  assert.equal(payload.code, "rate_limited");
+  assert.match(String(payload.error), /Too many itinerary requests/);
+});
+
+test("POST /api/itinerary rejects oversized request bodies", async () => {
+  const oversizedRequest = new Request("http://127.0.0.1:3000/api/itinerary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tripInput: {
+        destination: `San Francisco, CA ${"x".repeat(33_000)}`,
+      },
+    }),
+  });
+
+  const response = await postItinerary(oversizedRequest);
+
+  assert.equal(response.status, 413);
+  const payload = (await response.json()) as Record<string, unknown>;
+  assert.equal(payload.code, "validation_error");
+  assert.equal(payload.error, "Request body is too large.");
+});
+
+function buildRequestWithHeaders(body: ItineraryRequest, headers: HeadersInit) {
+  return new Request("http://127.0.0.1:3000/api/itinerary", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    body: JSON.stringify(body),
+  });
+}
