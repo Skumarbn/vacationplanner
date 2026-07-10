@@ -50,7 +50,7 @@ export function loadTripFromStorage(storage: StorageLike, token: string, now = n
   const saved = storage.getItem(getTripStorageKey(token));
   if (!saved) return null;
 
-  const parsed = JSON.parse(saved) as SavedTrip;
+  const parsed = normalizeSavedTrip(JSON.parse(saved) as Partial<SavedTrip>);
   if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() <= now.getTime()) {
     storage.removeItem(getTripStorageKey(token));
     return null;
@@ -75,7 +75,7 @@ export function listSavedTrips(storage: StorageLike, now = new Date()) {
     if (trip) trips.push(trip);
   }
 
-  return trips.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  return trips.sort((left, right) => getSavedTripSortKey(right).localeCompare(getSavedTripSortKey(left)));
 }
 
 export function buildItineraryText(savedTrip: Pick<SavedTrip, "itinerary" | "tripInput" | "token">) {
@@ -103,4 +103,41 @@ export function buildItineraryText(savedTrip: Pick<SavedTrip, "itinerary" | "tri
   }
 
   return lines.join("\n").trim();
+}
+
+export function buildCalendarText(savedTrip: Pick<SavedTrip, "itinerary" | "tripInput">) {
+  const lines = [
+    `${savedTrip.itinerary.title} Calendar Outline`,
+    `${savedTrip.tripInput.destination} · Starts ${savedTrip.tripInput.startDate || "TBD"}`,
+    "",
+  ];
+
+  savedTrip.itinerary.days.forEach((day) => {
+    lines.push(`${day.title} (${day.meta})`);
+    day.activities.forEach((activity) => {
+      lines.push(
+        `${activity.time}: ${activity.title}`,
+        `Focus: ${activity.description}`,
+        `Map search: ${activity.mapQuery}`,
+      );
+    });
+    lines.push("");
+  });
+
+  return lines.join("\n").trim();
+}
+
+function normalizeSavedTrip(savedTrip: Partial<SavedTrip>) {
+  const fallbackTimestamp = savedTrip.savedAt || savedTrip.createdAt || new Date(0).toISOString();
+
+  return {
+    ...savedTrip,
+    createdAt: savedTrip.createdAt || fallbackTimestamp,
+    savedAt: savedTrip.savedAt || fallbackTimestamp,
+    updatedAt: savedTrip.updatedAt || savedTrip.savedAt || savedTrip.createdAt || fallbackTimestamp,
+  } as SavedTrip;
+}
+
+function getSavedTripSortKey(savedTrip: SavedTrip) {
+  return savedTrip.updatedAt || savedTrip.savedAt || savedTrip.createdAt || "";
 }

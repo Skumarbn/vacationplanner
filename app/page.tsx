@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  buildCalendarText,
   buildItineraryText,
   buildLocalTripUrl,
   deleteTripFromStorage,
@@ -61,6 +62,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedItinerary, setCopiedItinerary] = useState(false);
+  const [copiedCalendar, setCopiedCalendar] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<number[]>([]);
   const activeRequestId = useRef(0);
   const statusTimeoutRef = useRef<number | null>(null);
   const lastRequestRef = useRef<PendingRequest | null>(null);
@@ -85,6 +88,15 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!itinerary) {
+      setExpandedDays([]);
+      return;
+    }
+
+    setExpandedDays(itinerary.days.map((_, index) => index));
+  }, [itinerary]);
 
   function updateInput<T extends keyof TripInput>(key: T, value: TripInput[T]) {
     setTripInput((current) => ({ ...current, [key]: value }));
@@ -300,6 +312,35 @@ export default function Home() {
         message: "Clipboard access is blocked here, so the itinerary text could not be copied.",
       });
     }
+  }
+
+  async function copyCalendarSummary() {
+    if (!payload) return;
+
+    try {
+      await navigator.clipboard.writeText(buildCalendarText({ ...payload, tripInput }));
+      setCopiedCalendar(true);
+      window.setTimeout(() => setCopiedCalendar(false), 1600);
+    } catch {
+      showBanner({
+        tone: "error",
+        title: "Copy blocked",
+        message: "Clipboard access is blocked here, so the calendar-friendly outline could not be copied.",
+      });
+    }
+  }
+
+  function printCurrentTrip() {
+    if (!itinerary) return;
+
+    setExpandedDays(itinerary.days.map((_, index) => index));
+    window.setTimeout(() => window.print(), 40);
+  }
+
+  function toggleDayExpanded(dayIndex: number) {
+    setExpandedDays((current) =>
+      current.includes(dayIndex) ? current.filter((index) => index !== dayIndex) : [...current, dayIndex],
+    );
   }
 
   function deleteCurrentTrip() {
@@ -538,15 +579,43 @@ export default function Home() {
 
             {itinerary ? (
               <div className="day-stack">
+                <div className="mobile-trip-bar" aria-label="Mobile trip actions">
+                  <button
+                    className="ghost-btn"
+                    type="button"
+                    onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    Edit trip
+                  </button>
+                  <button className="ghost-btn" type="button" onClick={copyCalendarSummary}>
+                    {copiedCalendar ? "Calendar copied" : "Copy calendar outline"}
+                  </button>
+                  <button className="primary-btn" type="button" onClick={printCurrentTrip}>
+                    Print / save PDF
+                  </button>
+                </div>
                 <div className="verify-banner" role="note">
                   Verify hours, tickets, travel times, and availability before you go.
                 </div>
                 {itinerary.days.map((day, dayIndex) => (
                   <article className={`day-card${isLoading ? " is-updating" : ""}`} key={`${day.title}-${dayIndex}`}>
                     <header className="day-head">
-                      <div>
+                      <div className="day-heading">
                         <h3>{day.title}</h3>
                         <div className="day-meta">{day.meta}</div>
+                        <div className="day-summary-row">
+                          <span className="day-summary-pill">
+                            {day.activities.length} stop{day.activities.length === 1 ? "" : "s"}
+                          </span>
+                          <button
+                            className="day-toggle"
+                            type="button"
+                            aria-expanded={expandedDays.includes(dayIndex)}
+                            onClick={() => toggleDayExpanded(dayIndex)}
+                          >
+                            {expandedDays.includes(dayIndex) ? "Hide details" : "Show details"}
+                          </button>
+                        </div>
                       </div>
                       <div className="day-actions">
                         <a
@@ -583,85 +652,91 @@ export default function Home() {
                         </button>
                       </div>
                     </header>
-                    {day.activities.map((activity, activityIndex) => (
-                      <div className="activity" key={`${activity.title}-${activityIndex}`}>
-                        <div className="time">{activity.time}</div>
-                        <div>
-                          <div className="activity-title-row">
-                            <h4>{activity.title}</h4>
-                            {activity.neighborhood ? (
-                              <span className="detail-chip detail-chip-location">{activity.neighborhood}</span>
-                            ) : null}
+                    {expandedDays.includes(dayIndex) ? (
+                      day.activities.map((activity, activityIndex) => (
+                        <div className="activity" key={`${activity.title}-${activityIndex}`}>
+                          <div className="time">{activity.time}</div>
+                          <div>
+                            <div className="activity-title-row">
+                              <h4>{activity.title}</h4>
+                              {activity.neighborhood ? (
+                                <span className="detail-chip detail-chip-location">{activity.neighborhood}</span>
+                              ) : null}
+                            </div>
+                            <p>{activity.description}</p>
+                            <div className="detail-grid" aria-label="Activity details">
+                              {activity.setting ? (
+                                <div className="detail-card">
+                                  <span className="detail-label">Setting</span>
+                                  <strong>{activity.setting}</strong>
+                                </div>
+                              ) : null}
+                              {activity.familyFriendly ? (
+                                <div className="detail-card">
+                                  <span className="detail-label">Kid fit</span>
+                                  <strong>{familyFriendlyLabel(activity.familyFriendly)}</strong>
+                                </div>
+                              ) : null}
+                              {activity.bookingHint ? (
+                                <div className="detail-card detail-card-wide">
+                                  <span className="detail-label">Booking hint</span>
+                                  <strong>{activity.bookingHint}</strong>
+                                </div>
+                              ) : null}
+                            </div>
+                            <div className="tags">
+                              {activity.tags.map((tag) => (
+                                <span className="tag" key={tag}>
+                                  {tag}
+                                </span>
+                              ))}
+                              <span className="tag">{activity.duration}</span>
+                              <span className="tag">{activity.cost}</span>
+                            </div>
                           </div>
-                          <p>{activity.description}</p>
-                          <div className="detail-grid" aria-label="Activity details">
-                            {activity.setting ? (
-                              <div className="detail-card">
-                                <span className="detail-label">Setting</span>
-                                <strong>{activity.setting}</strong>
-                              </div>
-                            ) : null}
-                            {activity.familyFriendly ? (
-                              <div className="detail-card">
-                                <span className="detail-label">Kid fit</span>
-                                <strong>{familyFriendlyLabel(activity.familyFriendly)}</strong>
-                              </div>
-                            ) : null}
-                            {activity.bookingHint ? (
-                              <div className="detail-card detail-card-wide">
-                                <span className="detail-label">Booking hint</span>
-                                <strong>{activity.bookingHint}</strong>
-                              </div>
-                            ) : null}
-                          </div>
-                          <div className="tags">
-                            {activity.tags.map((tag) => (
-                              <span className="tag" key={tag}>
-                                {tag}
-                              </span>
-                            ))}
-                            <span className="tag">{activity.duration}</span>
-                            <span className="tag">{activity.cost}</span>
+                          <div className="activity-actions">
+                            <div className="activity-action-group">
+                              <button
+                                className="small-btn"
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
+                              >
+                                Swap
+                              </button>
+                              <button
+                                className="small-btn"
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => requestItinerary("kid-friendly-activity", { dayIndex, activityIndex })}
+                              >
+                                More kid-friendly
+                              </button>
+                              <button
+                                className="small-btn"
+                                type="button"
+                                disabled={isLoading}
+                                onClick={() => requestItinerary("remove-activity", { dayIndex, activityIndex })}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <a
+                              className="map-link"
+                              href={buildGoogleMapsSearchUrl(activity.mapQuery)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open in Google Maps
+                            </a>
                           </div>
                         </div>
-                        <div className="activity-actions">
-                          <div className="activity-action-group">
-                            <button
-                              className="small-btn"
-                              type="button"
-                              disabled={isLoading}
-                              onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
-                            >
-                              Swap
-                            </button>
-                            <button
-                              className="small-btn"
-                              type="button"
-                              disabled={isLoading}
-                              onClick={() => requestItinerary("kid-friendly-activity", { dayIndex, activityIndex })}
-                            >
-                              More kid-friendly
-                            </button>
-                            <button
-                              className="small-btn"
-                              type="button"
-                              disabled={isLoading}
-                              onClick={() => requestItinerary("remove-activity", { dayIndex, activityIndex })}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <a
-                            className="map-link"
-                            href={buildGoogleMapsSearchUrl(activity.mapQuery)}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open in Google Maps
-                          </a>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="day-collapsed-note">
+                        Expand this day to review the full stop list, activity details, and map links.
                       </div>
-                    ))}
+                    )}
                   </article>
                 ))}
               </div>
@@ -738,6 +813,21 @@ export default function Home() {
                   ) : null}
                 </div>
               ) : null}
+            </section>
+
+            <section className="side-card share-box">
+              <h2>Take it with you</h2>
+              <p className="hint">
+                Use the current local itinerary data for printing, PDF save, or a calendar-friendly outline.
+              </p>
+              <div className="share-actions">
+                <button className="primary-btn" type="button" onClick={printCurrentTrip} disabled={!payload}>
+                  Print / save PDF
+                </button>
+                <button className="ghost-btn" type="button" onClick={copyCalendarSummary} disabled={!payload}>
+                  {copiedCalendar ? "Calendar copied" : "Copy calendar outline"}
+                </button>
+              </div>
             </section>
 
             <section className="side-card">

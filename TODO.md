@@ -653,7 +653,7 @@ Verification notes:
 
 ## 17. Mobile Polish
 
-Status: Not started
+Status: Partial
 Priority: P2
 Agent owner: Frontend + UX
 
@@ -676,6 +676,18 @@ Acceptance checks:
 Dependencies:
 
 - None.
+
+Progress notes:
+
+- Added collapsible day sections with stop-count summaries so longer itineraries are easier to scan before expanding the full activity list.
+- Added a mobile-only sticky trip action bar with quick access to edit, calendar-copy, and print/save-PDF actions without forcing users back through the sidebar.
+- Tightened small-screen spacing for results, day cards, share URLs, and sidebar cards while preserving the existing warm visual style.
+- A legacy local-storage compatibility fix now normalizes older saved trips that only had `savedAt`, so existing browser-local trips still load after the new sidebar/export surfaces render.
+
+Verification notes:
+
+- `npm run build`
+- Manual browser verification on July 9, 2026 at `http://localhost:3000/#trip=vs0mDYMU`: an older saved local trip loaded without crashing, day sections now collapse/expand in place, and the export card rendered alongside the existing local-share controls.
 
 ## 18. User Feedback Loop
 
@@ -730,6 +742,14 @@ Progress notes:
 
 - The `Copy itinerary text` action already shipped as part of the local share-link polish, so the remaining scope is print/export-specific presentation rather than basic text portability.
 - Print-friendly layout, PDF export, and calendar-oriented export text are still open.
+- Added a dedicated `Take it with you` export card plus a mobile sticky export action so travelers can print/save PDF or copy a calendar-oriented outline from the current local itinerary data.
+- Added print-specific CSS that strips form/sidebar chrome, keeps day cards readable on paper, and exposes map URLs in the printed output.
+- Calendar-oriented export text now includes day headers, times, activity names, descriptions, and map-search strings without requiring API keys.
+
+Verification notes:
+
+- `npm run build`
+- Manual browser verification on July 9, 2026 at `http://localhost:3000/#trip=vs0mDYMU`: the new export card rendered with `Print / save PDF` and `Copy calendar outline`, and collapsed-day behavior still worked alongside the export controls.
 
 ## 20. Future Accounts
 
