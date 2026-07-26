@@ -132,3 +132,107 @@ test("swap-activity preserves unrelated days and updates only the targeted stop"
   assert.deepEqual(updated.itinerary.days[0].activities[0], original.itinerary.days[0].activities[0]);
   assert.notDeepEqual(updated.itinerary.days[0].activities[1], original.itinerary.days[0].activities[1]);
 });
+
+test("generateItinerary caps 1-day packed trips at three activities", async () => {
+  delete process.env.OPENAI_API_KEY;
+
+  const result = await generateItinerary({
+    input: { ...baseInput, days: 1, children: 0, pace: "Packed" },
+    action: "generate",
+    existingItinerary: null,
+    target: {},
+  });
+
+  assert.equal(result.itinerary.days[0].activities.length, 3);
+});
+
+test("generateItinerary repairs provider output with meal balance and nearby clustering", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        output_text: JSON.stringify({
+          title: "San Francisco family trip",
+          summary: {
+            pace: "Balanced",
+            budget: "Moderate",
+            bestFor: "Families",
+            activityCount: 3,
+          },
+          destination: "San Francisco",
+          notes: ["Verify hours, tickets, and travel times before going."],
+          days: [
+            {
+              title: "Day 1",
+              meta: "Family-aware pacing",
+              activities: [
+                {
+                  time: "9:00 AM",
+                  title: "California Academy of Sciences",
+                  description: "Museum start in the park.",
+                  duration: "2 hours",
+                  cost: "$$",
+                  tags: ["Museums", "Indoor"],
+                  mapQuery: "California Academy of Sciences San Francisco, CA",
+                  neighborhood: "Golden Gate Park",
+                  bookingHint: "Book ahead.",
+                  setting: "Indoor",
+                  familyFriendly: "High",
+                },
+                {
+                  time: "12:30 PM",
+                  title: "Coit Tower",
+                  description: "Views across the bay.",
+                  duration: "1 hour",
+                  cost: "$$",
+                  tags: ["Views", "History"],
+                  mapQuery: "Coit Tower San Francisco, CA",
+                  neighborhood: "Telegraph Hill",
+                  bookingHint: "Check the elevator line.",
+                  setting: "Outdoor",
+                  familyFriendly: "Medium",
+                },
+                {
+                  time: "3:30 PM",
+                  title: "Twin Peaks",
+                  description: "A second big-view stop.",
+                  duration: "1 hour",
+                  cost: "$$",
+                  tags: ["Views", "Scenic"],
+                  mapQuery: "Twin Peaks San Francisco, CA",
+                  neighborhood: "Twin Peaks",
+                  bookingHint: "Go when visibility is good.",
+                  setting: "Outdoor",
+                  familyFriendly: "Medium",
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const result = await generateItinerary({
+    input: { ...baseInput, days: 1, pace: "Balanced", children: 1 },
+    action: "generate",
+    existingItinerary: null,
+    target: {},
+  });
+
+  const activities = result.itinerary.days[0].activities;
+  assert.equal(activities.length, 3);
+  assert.ok(activities.some((activity) => activity.tags.some((tag) => /Food|Market|Bakery|Dessert/i.test(tag))));
+
+  const neighborhoods = new Set(activities.map((activity) => activity.neighborhood));
+  assert.ok(neighborhoods.size <= 2);
+});

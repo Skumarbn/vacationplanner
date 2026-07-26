@@ -116,6 +116,7 @@ Progress notes:
 - OpenAI generation now retries once with repair instructions when the first response is malformed or too generic.
 - A repair pass now normalizes notes, day counts, and missing activity fields before returning API data.
 - Current `main` and `origin/main` both include this pipeline work; the remaining gap is real-credential verification plus any follow-up fixes that verification uncovers.
+- Targeted regenerate/swap/remove actions now preserve unrelated days exactly inside the repair pass instead of relying on provider cooperation alone.
 
 ## 3. Local Trip Storage
 
@@ -389,7 +390,7 @@ Verification notes:
 
 ## 10. Itinerary Quality Rules
 
-Status: Partial
+Status: Completed
 Priority: P1
 Agent owner: AI + Backend
 
@@ -417,6 +418,14 @@ Progress notes:
 
 - Added repair rules to avoid generic duplicate places and cap family packed days at 3 activities.
 - Demo generation now keeps family trips lighter and preserves the verify-before-going disclaimer.
+- Repair logic now preserves unrelated days exactly during targeted regenerate/swap/remove actions while applying quality rules only to the generated or targeted day.
+- Added day-level guardrails so 1-day trips cap at 3 activities, multi-stop days regain a meal-oriented stop when missing, family days add a softer break stop when needed, and repaired plans cluster to at most two rough neighborhoods per day.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on July 26, 2026 with mocked-provider coverage in `tests/itinerary.test.ts`: 1-day packed trips stay capped at 3 activities, repaired provider output regains a meal stop, and day neighborhoods stay clustered to at most two rough areas.
 
 ## 11. Activity Details Enrichment Without Places API
 

@@ -587,6 +587,12 @@ function repairItinerary(
 
   const seenTitles = new Set<string>();
   repaired.days = repaired.days.map((day, dayIndex) => {
+    if (shouldPreserveExistingDay(existingItinerary, action, target, dayIndex)) {
+      const preservedDay = existingItinerary!.days[dayIndex];
+      preservedDay.activities.forEach((activity) => seenTitles.add(activity.title.toLowerCase()));
+      return structuredClone(preservedDay);
+    }
+
     const maxActivities = maxActivitiesForInput(input);
     const minActivities = input.pace === "Relaxed" ? 2 : 2;
     const seedActivities = Array.isArray(day.activities) ? day.activities : [];
@@ -608,6 +614,8 @@ function repairItinerary(
       );
     }
 
+    const qualityActivities = applyDayQualityRules(normalizedActivities, input, dayIndex);
+
     return {
       title: String(day.title || `Day ${dayIndex + 1}`).trim(),
       meta:
@@ -615,7 +623,7 @@ function repairItinerary(
         (input.children > 0
           ? "Family-aware pacing · breaks built in"
           : `${input.pace} pace · nearby stops grouped together`),
-      activities: normalizedActivities,
+      activities: qualityActivities,
     };
   });
 
@@ -634,6 +642,35 @@ function repairItinerary(
 
   repaired.summary.activityCount = countActivities(repaired);
   return repaired;
+}
+
+function shouldPreserveExistingDay(
+  existingItinerary: Itinerary | null,
+  action: ItineraryAction,
+  target: ItineraryTarget,
+  dayIndex: number,
+) {
+  if (!existingItinerary || action === "generate") {
+    return false;
+  }
+
+  if (
+    action === "regenerate-day" ||
+    action === "relax-day" ||
+    action === "cheaper-day"
+  ) {
+    return target.dayIndex !== dayIndex;
+  }
+
+  if (
+    action === "swap-activity" ||
+    action === "kid-friendly-activity" ||
+    action === "remove-activity"
+  ) {
+    return target.dayIndex !== dayIndex;
+  }
+
+  return false;
 }
 
 function normalizeNotes(notes: string[]) {
@@ -753,10 +790,213 @@ function enrichActivity(activity: Activity, input: TripInput): Activity {
 }
 
 function maxActivitiesForInput(input: TripInput) {
+  if (input.days === 1) {
+    const cap = input.children > 0 ? 3 : 3;
+    return Math.min({ Relaxed: 2, Balanced: 3, Packed: 4 }[input.pace] || 3, cap);
+  }
   if (input.children > 0 && input.pace === "Packed") {
     return 3;
   }
   return { Relaxed: 2, Balanced: 3, Packed: 4 }[input.pace] || 3;
+}
+
+function applyDayQualityRules(activities: Activity[], input: TripInput, dayIndex: number) {
+  const nextActivities = activities.map((activity) => structuredClone(activity));
+
+  ensureMealStop(nextActivities, input, dayIndex);
+  ensureFamilyBreak(nextActivities, input, dayIndex);
+  clusterNeighborhoods(nextActivities, input, dayIndex);
+
+  return nextActivities;
+}
+
+function ensureMealStop(activities: Activity[], input: TripInput, dayIndex: number) {
+  if (activities.length < 3 || activities.some(isMealActivity)) {
+    return;
+  }
+
+  const primaryNeighborhoods = preferredNeighborhoods(activities);
+  const replacementIndex = Math.min(1, activities.length - 1);
+  const replacement = selectSeedReplacement(
+    input,
+    dayIndex,
+    activities[replacementIndex],
+    {
+      neighborhoods: primaryNeighborhoods,
+      existingTitles: activities
+        .filter((_, index) => index !== replacementIndex)
+        .map((activity) => activity.title.toLowerCase()),
+      matcher: (seed) => seed.tags.some((tag) => /Food|Market|Bakery|Dessert/i.test(tag)),
+    },
+  );
+
+  if (replacement) {
+    activities[replacementIndex] = replacement;
+  }
+}
+
+function ensureFamilyBreak(activities: Activity[], input: TripInput, dayIndex: number) {
+  if (input.children <= 0 || activities.length < 3 || activities.some(isBreakActivity)) {
+    return;
+  }
+
+  const replacementIndex = activities.length - 1;
+  const replacement = selectSeedReplacement(
+    input,
+    dayIndex,
+    activities[replacementIndex],
+    {
+      neighborhoods: preferredNeighborhoods(activities),
+      existingTitles: activities
+        .filter((_, index) => index !== replacementIndex)
+        .map((activity) => activity.title.toLowerCase()),
+      matcher: (seed) =>
+        seed.tags.some((tag) => /Kid-friendly|Family|Relaxed|Outdoors|Views/i.test(tag)),
+    },
+  );
+
+  if (replacement) {
+    activities[replacementIndex] = replacement;
+  }
+}
+
+function clusterNeighborhoods(activities: Activity[], input: TripInput, dayIndex: number) {
+  const allowedNeighborhoods = preferredNeighborhoods(activities).slice(0, 2);
+  if (allowedNeighborhoods.length === 0) {
+    return;
+  }
+
+  activities.forEach((activity, index) => {
+    if (!activity.neighborhood || allowedNeighborhoods.includes(activity.neighborhood)) {
+      return;
+    }
+
+    const replacement = selectSeedReplacement(
+      input,
+      dayIndex,
+      activity,
+      {
+        neighborhoods: allowedNeighborhoods,
+        existingTitles: activities
+          .filter((_, activityIndex) => activityIndex !== index)
+          .map((candidate) => candidate.title.toLowerCase()),
+        matcher: (seed) => matchesActivityIntent(seed, activity),
+      },
+    );
+
+    if (replacement) {
+      activities[index] = replacement;
+    }
+  });
+}
+
+function preferredNeighborhoods(activities: Activity[]) {
+  const counts = new Map<string, number>();
+  const order = new Map<string, number>();
+
+  activities.forEach((activity, index) => {
+    const neighborhood = String(activity.neighborhood || "").trim();
+    if (!neighborhood) {
+      return;
+    }
+    counts.set(neighborhood, (counts.get(neighborhood) || 0) + 1);
+    if (!order.has(neighborhood)) {
+      order.set(neighborhood, index);
+    }
+  });
+
+  return Array.from(counts.entries())
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return (order.get(left[0]) || 0) - (order.get(right[0]) || 0);
+    })
+    .map(([neighborhood]) => neighborhood);
+}
+
+function selectSeedReplacement(
+  input: TripInput,
+  dayIndex: number,
+  currentActivity: Activity,
+  options: {
+    neighborhoods: string[];
+    existingTitles: string[];
+    matcher: (seed: PlaceActivitySeed) => boolean;
+  },
+) {
+  const placeSet = getPlaceSet(input.destination);
+  const existingTitles = new Set(options.existingTitles);
+  const matchingSeed =
+    placeSet.activities.find((seed) =>
+      seedMatchesReplacement(seed, existingTitles, options.neighborhoods, options.matcher),
+    ) ||
+    placeSet.activities.find((seed) =>
+      seedMatchesReplacement(seed, existingTitles, [], options.matcher),
+    );
+
+  if (!matchingSeed) {
+    return null;
+  }
+
+  return enrichActivity(
+    {
+      time: currentActivity.time,
+      title: matchingSeed.title,
+      description: matchingSeed.description,
+      duration: currentActivity.duration,
+      cost: currentActivity.cost,
+      tags: Array.from(new Set([...matchingSeed.tags, currentActivity.cost])).slice(0, 4),
+      mapQuery: `${matchingSeed.title} ${input.destination}`,
+      neighborhood: matchingSeed.neighborhood,
+      bookingHint: matchingSeed.bookingHint || currentActivity.bookingHint,
+      setting: currentActivity.setting,
+      familyFriendly: currentActivity.familyFriendly,
+    },
+    input,
+  );
+}
+
+function seedMatchesReplacement(
+  seed: PlaceActivitySeed,
+  existingTitles: Set<string>,
+  neighborhoods: string[],
+  matcher: (seed: PlaceActivitySeed) => boolean,
+) {
+  if (existingTitles.has(seed.title.toLowerCase())) {
+    return false;
+  }
+
+  if (neighborhoods.length > 0 && seed.neighborhood && !neighborhoods.includes(seed.neighborhood)) {
+    return false;
+  }
+
+  return matcher(seed);
+}
+
+function matchesActivityIntent(seed: PlaceActivitySeed, activity: Activity) {
+  if (isMealActivity(activity)) {
+    return seed.tags.some((tag) => /Food|Market|Bakery|Dessert/i.test(tag));
+  }
+  if (isBreakActivity(activity)) {
+    return seed.tags.some((tag) => /Kid-friendly|Family|Relaxed|Outdoors|Views/i.test(tag));
+  }
+  if (activity.setting === "Indoor") {
+    return seed.tags.some((tag) => /Indoor|Museums|Culture/i.test(tag));
+  }
+  if (activity.setting === "Outdoor") {
+    return seed.tags.some((tag) => /Outdoors|Scenic|Views|Coast|Walking/i.test(tag));
+  }
+
+  return true;
+}
+
+function isMealActivity(activity: Activity) {
+  return activity.tags.some((tag) => /Food|Market|Bakery|Dessert/i.test(tag));
+}
+
+function isBreakActivity(activity: Activity) {
+  return activity.tags.some((tag) => /Kid-friendly|Family|Relaxed|Outdoors|Views|Park/i.test(tag));
 }
 
 function createFallbackTrip(input: TripInput): Itinerary {
