@@ -522,11 +522,13 @@ Completion notes:
 - Expanded `.env.example` with `APP_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, and `PORT` plus required-vs-optional guidance.
 - Added `lib/env.ts` and `instrumentation.ts` so production startup fails clearly when `APP_URL` is missing or invalid.
 - Updated `README.md` with local setup, test, and deployment environment expectations.
+- Added direct automated coverage in `tests/env.test.ts` for `APP_URL` fallback, production validation failures, instrumentation startup validation, and health snapshot mode reporting.
 
 Verification notes:
 
 - `npm test`
 - `npm run build`
+- Reverified on July 26, 2026 from `main`: `npm test` passed with direct coverage for production `APP_URL` validation and `instrumentation.ts` startup checks, and `npm run build` passed afterward.
 
 ## 14. Testing
 
@@ -575,6 +577,7 @@ Additional verification notes:
 - `npm run build`
 - Reverified on July 2, 2026 from `main`: `npm run build` passed, demo generation still returned exact San Francisco place names plus enriched activity fields, and invalid action/input requests still returned structured `validation_error` responses.
 - Reverified on July 9, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for OpenAI retry/repair on generic first-pass output and sanitized authentication failures, and `npm run build` passed on Next.js 15.5.19.
+- Reverified on July 26, 2026 from synced `main`: `npm test` passed with new env/config coverage for production startup validation and health mode reporting, and `npm run build` still passed with the expanded suite.
 
 ## 15. Deployment
 
@@ -612,6 +615,7 @@ Verification notes:
 - `npm test`
 - `npm run build`
 - `GET /api/health` covered in `tests/routes.test.ts`
+- Reverified on July 26, 2026 from synced `main`: `npm test` passed with explicit health snapshot and production env validation coverage, and `npm run build` passed without deployment config regressions.
 
 ## 16. Security And Rate Limits
 
