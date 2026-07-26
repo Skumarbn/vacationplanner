@@ -749,11 +749,16 @@ Progress notes:
 - Added a dedicated `Take it with you` export card plus a mobile sticky export action so travelers can print/save PDF or copy a calendar-oriented outline from the current local itinerary data.
 - Added print-specific CSS that strips form/sidebar chrome, keeps day cards readable on paper, and exposes map URLs in the printed output.
 - Calendar-oriented export text now includes day headers, times, activity names, descriptions, and map-search strings without requiring API keys.
+- Added downloadable `.ics` calendar export actions in both the sidebar export card and the mobile sticky action bar so travelers can import the current itinerary into calendar apps without retyping each stop.
+- Added `buildCalendarIcs` coverage in `tests/local-trip.test.ts` so timed event export stays stable for 1-day and 2-day demo trips.
 
 Verification notes:
 
 - `npm run build`
 - Manual browser verification on July 9, 2026 at `http://localhost:3000/#trip=vs0mDYMU`: the new export card rendered with `Print / save PDF` and `Copy calendar outline`, and collapsed-day behavior still worked alongside the export controls.
+- `npm test`
+- `npm run build`
+- Automation verification note on July 26, 2026: local browser automation could not open `http://127.0.0.1:3001` because the in-app browser returned `ERR_BLOCKED_BY_CLIENT`, so `.ics` export behavior was verified by tests/build only in this run.
 
 ## 20. Future Accounts
 

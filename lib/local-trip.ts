@@ -127,6 +127,32 @@ export function buildCalendarText(savedTrip: Pick<SavedTrip, "itinerary" | "trip
   return lines.join("\n").trim();
 }
 
+export function buildCalendarIcs(savedTrip: Pick<SavedTrip, "itinerary" | "tripInput" | "token">, now = new Date()) {
+  const tripStartDate = savedTrip.tripInput.startDate || formatDateForInput(now);
+  const events = savedTrip.itinerary.days.flatMap((day, dayIndex) =>
+    day.activities.map((activity, activityIndex) =>
+      buildCalendarEvent({
+        tripToken: savedTrip.token,
+        destination: savedTrip.tripInput.destination,
+        tripStartDate,
+        dayIndex,
+        activityIndex,
+        activity,
+      }),
+    ),
+  );
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Vacation Planner//Trip Export//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...events,
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
 function normalizeSavedTrip(savedTrip: Partial<SavedTrip>) {
   const fallbackTimestamp = savedTrip.savedAt || savedTrip.createdAt || new Date(0).toISOString();
 
@@ -140,4 +166,115 @@ function normalizeSavedTrip(savedTrip: Partial<SavedTrip>) {
 
 function getSavedTripSortKey(savedTrip: SavedTrip) {
   return savedTrip.updatedAt || savedTrip.savedAt || savedTrip.createdAt || "";
+}
+
+function buildCalendarEvent({
+  tripToken,
+  destination,
+  tripStartDate,
+  dayIndex,
+  activityIndex,
+  activity,
+}: {
+  tripToken: string;
+  destination: string;
+  tripStartDate: string;
+  dayIndex: number;
+  activityIndex: number;
+  activity: SavedTrip["itinerary"]["days"][number]["activities"][number];
+}) {
+  const startDate = addDays(tripStartDate, dayIndex);
+  const startDateTime = combineDateAndTime(startDate, activity.time);
+  const endDateTime = addMinutes(startDateTime, parseDurationMinutes(activity.duration));
+  const timestamp = formatUtcDateTime(new Date());
+  const uid = `${tripToken}-${dayIndex}-${activityIndex}@vacationplanner`;
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activity.mapQuery)}`;
+  const description = escapeIcsText(
+    [
+      activity.description,
+      `Duration: ${activity.duration}`,
+      `Cost: ${activity.cost}`,
+      `Map search: ${activity.mapQuery}`,
+    ].join("\n"),
+  );
+
+  return [
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${timestamp}`,
+    `DTSTART:${formatLocalDateTime(startDateTime)}`,
+    `DTEND:${formatLocalDateTime(endDateTime)}`,
+    `SUMMARY:${escapeIcsText(activity.title)}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${escapeIcsText(`${activity.mapQuery}, ${destination}`)}`,
+    `URL:${escapeIcsText(mapUrl)}`,
+    `CATEGORIES:${activity.tags.map(escapeIcsText).join(",")}`,
+    "END:VEVENT",
+  ].join("\r\n");
+}
+
+function formatDateForInput(value: Date) {
+  const year = value.getFullYear();
+  const month = `${value.getMonth() + 1}`.padStart(2, "0");
+  const day = `${value.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(dateText: string, daysToAdd: number) {
+  const date = new Date(`${dateText}T00:00:00`);
+  date.setDate(date.getDate() + daysToAdd);
+  return formatDateForInput(date);
+}
+
+function combineDateAndTime(dateText: string, timeText: string) {
+  const match = timeText.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const date = new Date(`${dateText}T09:00:00`);
+  if (!match) return date;
+
+  const [, hoursText, minutesText, meridiem] = match;
+  const rawHours = Number(hoursText) % 12;
+  const hours = meridiem.toUpperCase() === "PM" ? rawHours + 12 : rawHours;
+  date.setHours(hours, Number(minutesText), 0, 0);
+  return date;
+}
+
+function parseDurationMinutes(durationText: string) {
+  const normalized = durationText.toLowerCase();
+  const hourMatch = normalized.match(/(\d+(?:\.\d+)?)\s*hour/);
+  const minuteMatch = normalized.match(/(\d+)\s*minute/);
+  const hours = hourMatch ? Number(hourMatch[1]) * 60 : 0;
+  const minutes = minuteMatch ? Number(minuteMatch[1]) : 0;
+  return Math.max(30, Math.round(hours + minutes) || 90);
+}
+
+function addMinutes(date: Date, minutesToAdd: number) {
+  return new Date(date.getTime() + minutesToAdd * 60 * 1000);
+}
+
+function formatLocalDateTime(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const hours = `${date.getHours()}`.padStart(2, "0");
+  const minutes = `${date.getMinutes()}`.padStart(2, "0");
+  const seconds = `${date.getSeconds()}`.padStart(2, "0");
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+}
+
+function formatUtcDateTime(date: Date) {
+  const year = date.getUTCFullYear();
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getUTCDate()}`.padStart(2, "0");
+  const hours = `${date.getUTCHours()}`.padStart(2, "0");
+  const minutes = `${date.getUTCMinutes()}`.padStart(2, "0");
+  const seconds = `${date.getUTCSeconds()}`.padStart(2, "0");
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+}
+
+function escapeIcsText(value: string) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
 }

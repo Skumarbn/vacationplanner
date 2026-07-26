@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  buildCalendarIcs,
   buildCalendarText,
   buildItineraryText,
   buildLocalTripUrl,
@@ -63,6 +64,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [copiedItinerary, setCopiedItinerary] = useState(false);
   const [copiedCalendar, setCopiedCalendar] = useState(false);
+  const [downloadedCalendar, setDownloadedCalendar] = useState(false);
   const [expandedDays, setExpandedDays] = useState<number[]>([]);
   const activeRequestId = useRef(0);
   const statusTimeoutRef = useRef<number | null>(null);
@@ -330,6 +332,37 @@ export default function Home() {
     }
   }
 
+  function downloadCalendarFile() {
+    if (!payload) return;
+
+    try {
+      const calendarFile = buildCalendarIcs({ ...payload, tripInput });
+      const blob = new Blob([calendarFile], { type: "text/calendar;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const tripSlug = (payload.itinerary.destination || tripInput.destination || "trip")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 40);
+
+      link.href = url;
+      link.download = `${tripSlug || "trip"}-itinerary.ics`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setDownloadedCalendar(true);
+      window.setTimeout(() => setDownloadedCalendar(false), 1800);
+    } catch {
+      showBanner({
+        tone: "error",
+        title: "Calendar export failed",
+        message: "The planner could not create the calendar file from this itinerary.",
+      });
+    }
+  }
+
   function printCurrentTrip() {
     if (!itinerary) return;
 
@@ -590,6 +623,9 @@ export default function Home() {
                   <button className="ghost-btn" type="button" onClick={copyCalendarSummary}>
                     {copiedCalendar ? "Calendar copied" : "Copy calendar outline"}
                   </button>
+                  <button className="ghost-btn" type="button" onClick={downloadCalendarFile}>
+                    {downloadedCalendar ? "Calendar downloaded" : "Download calendar (.ics)"}
+                  </button>
                   <button className="primary-btn" type="button" onClick={printCurrentTrip}>
                     Print / save PDF
                   </button>
@@ -826,6 +862,9 @@ export default function Home() {
                 </button>
                 <button className="ghost-btn" type="button" onClick={copyCalendarSummary} disabled={!payload}>
                   {copiedCalendar ? "Calendar copied" : "Copy calendar outline"}
+                </button>
+                <button className="ghost-btn" type="button" onClick={downloadCalendarFile} disabled={!payload}>
+                  {downloadedCalendar ? "Calendar downloaded" : "Download calendar (.ics)"}
                 </button>
               </div>
             </section>

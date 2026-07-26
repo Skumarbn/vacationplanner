@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildCalendarIcs,
   buildItineraryText,
   buildLocalTripUrl,
   deleteTripFromStorage,
@@ -146,4 +147,18 @@ test("share helpers parse tokens, delete saved trips, and build itinerary text",
 
   deleteTripFromStorage(storage, "trip-123");
   assert.equal(loadTripFromStorage(storage, "trip-123"), null);
+});
+
+test("buildCalendarIcs exports trip activities as timed calendar events", () => {
+  const calendarIcs = buildCalendarIcs(basePayload, new Date("2026-07-26T08:30:00.000Z"));
+
+  assert.match(calendarIcs, /BEGIN:VCALENDAR/);
+  assert.match(calendarIcs, /SUMMARY:Exploratorium/);
+  assert.match(calendarIcs, /DTSTART:20260812T090000/);
+  assert.match(calendarIcs, /DTEND:20260812T110000/);
+  assert.match(
+    calendarIcs,
+    /URL:https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=Exploratorium%20San%20Francisco%2C%20CA/,
+  );
+  assert.match(calendarIcs, /LOCATION:Exploratorium San Francisco\\, CA\\, San Francisco\\, CA/);
 });
