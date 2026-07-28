@@ -34,21 +34,21 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Verify exact-place OpenAI output and provider-error behavior on real credentials, then close any remaining specificity gaps without adding external place-data APIs.
-- P1: Finish itinerary quality guardrails for duplicates, geography, pacing, and repair behavior in items 2, 10, and 12 using the real-credential findings as the acceptance baseline.
+- P0: Unblock item 1 by running real-credential OpenAI verification, then use those findings to close the remaining item 2 and item 12 acceptance gaps without adding external place-data APIs.
 - P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases.
-- P2: Keep mobile UX follow-through focused on any remaining small-screen regressions; core export/share functionality is now shipped for V1.
+- P2: Keep mobile UX follow-through focused on any remaining 375px comfort regressions in item 17; core export/share functionality is shipped for V1.
+- Later: Leave feedback loops and account work in items 18 and 20 out of the active queue until V1 verification is fully closed.
 
 ## Current Agent Handoff
 
-- AI + Backend: Run item 1 acceptance verification with a real `OPENAI_API_KEY`, then close the remaining item 2, item 10, and item 12 gaps around geography, pacing, duplicate prevention, and provider-specific failure handling without changing the no-database and no-Places-API V1 scope.
-- Frontend + UX: Treat mobile/export as maintenance unless backend verification uncovers UX issues; if doing UI work next, focus only on remaining 375px comfort gaps in item 17 rather than adding new V1 surface area.
-- Testing + Release: Re-run `npm test` and `npm run build` after the next merged implementation change, then add or update coverage for any provider/auth/repair cases confirmed during item 1 verification.
-- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` status accuracy from merged evidence, and keep item 1 verification plus item 2/10/12 hardening ahead of any later-stage feature work.
+- AI + Backend: Treat item 1 as the active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, capture exact failing destinations or provider cases, then patch only the remaining item 2 and item 12 gaps that the credentialed run proves.
+- Frontend + UX: Treat mobile/export as maintenance only; do not add new V1 features. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or error-state wording needed to support the verified provider behavior.
+- Testing + Release: After the next merged implementation change, re-run `npm test` and `npm run build`, then add or tighten coverage only for the provider/auth/repair cases confirmed during item 1 verification.
+- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of later-stage wishlist work.
 
 ## 1. Exact Place Generation With OpenAI
 
-Status: Partial
+Status: Blocked
 Priority: P0
 Agent owner: AI + Backend
 
@@ -78,7 +78,7 @@ Progress notes:
 
 - Strengthened the OpenAI prompt to require exact place names, named areas, and Google-Maps-ready `mapQuery` values.
 - Added stronger destination-specific demo catalogs for San Francisco, New York City, and Paris instead of generic placeholder activities.
-- Full OpenAI acceptance verification is still blocked until `OPENAI_API_KEY` is available.
+- Full OpenAI acceptance verification is still blocked until a real `OPENAI_API_KEY` is available in the execution environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -473,7 +473,7 @@ Verification notes:
 ## 12. Provider Error Handling
 
 Status: Partial
-Priority: P1
+Priority: P0
 Agent owner: AI + Backend
 
 Goal: Make external service failures understandable.
@@ -498,7 +498,7 @@ Progress notes:
 
 - API errors now return structured `code` and `details` fields for validation, provider, rate-limit, and malformed-response cases.
 - Provider messages are sanitized before returning them to the browser.
-- The current UI also shows persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures; remaining acceptance risk is real-credential verification of the OpenAI-specific path.
+- The current UI also shows persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures; the remaining acceptance risk is real-credential verification of the OpenAI-specific path.
 
 ## 13. Environment And Config
 
@@ -801,5 +801,5 @@ Dependencies:
 - 2026-06-29: Merged `agent/product-owner-20260628-requirements` into `main`.
 - Verification: `npm run build` passed on `agent/product-owner-20260628-requirements` and again on merged `main`.
 - Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
-- 2026-07-26: Fetched `origin`; local `main` and `origin/main` both point to `9cfc361`, so the roadmap baseline now includes rate limiting, provider auth/retry test coverage, and the merged mobile/export polish work.
-- The highest-value unfinished work remains real-credential OpenAI verification plus the remaining itinerary quality/provider hardening tasks in items 1, 2, 10, and 12.
+- 2026-07-28: Fetched `origin`; local `main` and `origin/main` both point to `5430c94`, so the roadmap baseline now includes the merged calendar export work and itinerary repair hardening from July 25, 2026.
+- Item 10 is complete on `main`; the highest-value unfinished work is now real-credential OpenAI verification plus any evidence-driven follow-up in items 2 and 12.
