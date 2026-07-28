@@ -133,6 +133,46 @@ test("swap-activity preserves unrelated days and updates only the targeted stop"
   assert.notDeepEqual(updated.itinerary.days[0].activities[1], original.itinerary.days[0].activities[1]);
 });
 
+test("feedback avoids rejected stops during demo swaps", async () => {
+  delete process.env.OPENAI_API_KEY;
+
+  const original = await generateItinerary({
+    input: { ...baseInput, days: 2 },
+    action: "generate",
+    existingItinerary: null,
+    target: {},
+  });
+
+  const rejected = original.itinerary.days[0].activities[1];
+  const updated = await generateItinerary({
+    input: { ...baseInput, days: 2 },
+    action: "swap-activity",
+    existingItinerary: original.itinerary,
+    target: { dayIndex: 0, activityIndex: 1 },
+    feedback: {
+      liked: [],
+      avoided: [
+        {
+          activityKey: `${rejected.title.toLowerCase()}::${rejected.mapQuery.toLowerCase()}`,
+          title: rejected.title,
+          mapQuery: rejected.mapQuery,
+          tags: rejected.tags,
+          sentiment: "avoid",
+          createdAt: "2026-07-28T18:00:00.000Z",
+        },
+      ],
+      replaceTarget: {
+        title: rejected.title,
+        mapQuery: rejected.mapQuery,
+        tags: rejected.tags,
+      },
+    },
+  });
+
+  assert.notEqual(updated.itinerary.days[0].activities[1].title, rejected.title);
+  assert.notEqual(updated.itinerary.days[0].activities[1].mapQuery, rejected.mapQuery);
+});
+
 test("generateItinerary caps 1-day packed trips at three activities", async () => {
   delete process.env.OPENAI_API_KEY;
 

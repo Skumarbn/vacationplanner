@@ -10,7 +10,7 @@ import {
   parseTripTokenFromHash,
   saveTripToStorage,
 } from "../lib/local-trip.ts";
-import type { ItineraryResponse } from "../lib/types.ts";
+import type { ItineraryResponse, TripFeedbackEntry } from "../lib/types.ts";
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -95,34 +95,45 @@ const basePayload: ItineraryResponse = {
 
 test("saveTripToStorage preserves createdAt while updating timestamps", () => {
   const storage = new MemoryStorage();
+  const feedback: TripFeedbackEntry[] = [
+    {
+      activityKey: "exploratorium::exploratorium san francisco, ca",
+      title: "Exploratorium",
+      mapQuery: "Exploratorium San Francisco, CA",
+      tags: ["Museums", "Kid-friendly"],
+      sentiment: "like",
+      createdAt: "2026-07-28T18:00:00.000Z",
+    },
+  ];
 
-  const first = saveTripToStorage(storage, basePayload, "2026-07-06T18:00:00.000Z");
-  const second = saveTripToStorage(storage, basePayload, "2026-07-06T19:00:00.000Z");
+  const first = saveTripToStorage(storage, { ...basePayload, feedback }, "2026-07-28T18:00:00.000Z");
+  const second = saveTripToStorage(storage, basePayload, "2026-07-28T19:00:00.000Z");
 
-  assert.equal(first.createdAt, "2026-07-06T18:00:00.000Z");
-  assert.equal(second.createdAt, "2026-07-06T18:00:00.000Z");
-  assert.equal(second.updatedAt, "2026-07-06T19:00:00.000Z");
+  assert.equal(first.createdAt, "2026-07-28T18:00:00.000Z");
+  assert.equal(second.createdAt, "2026-07-28T18:00:00.000Z");
+  assert.equal(second.updatedAt, "2026-07-28T19:00:00.000Z");
+  assert.deepEqual(second.feedback, feedback);
 });
 
 test("loadTripFromStorage removes expired trips and listSavedTrips sorts newest first", () => {
   const storage = new MemoryStorage();
 
-  saveTripToStorage(storage, basePayload, "2026-07-06T18:00:00.000Z");
-  saveTripToStorage(storage, { ...basePayload, token: "trip-456" }, "2026-07-06T20:00:00.000Z");
+  saveTripToStorage(storage, basePayload, "2026-07-28T18:00:00.000Z");
+  saveTripToStorage(storage, { ...basePayload, token: "trip-456" }, "2026-07-28T20:00:00.000Z");
   storage.setItem(
     "vacationplanner:expired",
     JSON.stringify({
       ...basePayload,
       token: "expired",
-      createdAt: "2026-07-01T00:00:00.000Z",
-      savedAt: "2026-07-01T00:00:00.000Z",
-      updatedAt: "2026-07-01T00:00:00.000Z",
-      expiresAt: "2026-07-02T00:00:00.000Z",
+      createdAt: "2026-07-20T00:00:00.000Z",
+      savedAt: "2026-07-20T00:00:00.000Z",
+      updatedAt: "2026-07-20T00:00:00.000Z",
+      expiresAt: "2026-07-21T00:00:00.000Z",
     }),
   );
 
-  const expired = loadTripFromStorage(storage, "expired", new Date("2026-07-03T00:00:00.000Z"));
-  const trips = listSavedTrips(storage, new Date("2026-07-06T21:00:00.000Z"));
+  const expired = loadTripFromStorage(storage, "expired", new Date("2026-07-22T00:00:00.000Z"));
+  const trips = listSavedTrips(storage, new Date("2026-07-28T21:00:00.000Z"));
 
   assert.equal(expired, null);
   assert.deepEqual(
@@ -133,7 +144,7 @@ test("loadTripFromStorage removes expired trips and listSavedTrips sorts newest 
 
 test("share helpers parse tokens, delete saved trips, and build itinerary text", () => {
   const storage = new MemoryStorage();
-  saveTripToStorage(storage, basePayload, "2026-07-06T18:00:00.000Z");
+  saveTripToStorage(storage, basePayload, "2026-07-28T18:00:00.000Z");
 
   assert.equal(parseTripTokenFromHash("#trip=trip-123"), "trip-123");
   assert.equal(

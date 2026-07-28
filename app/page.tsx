@@ -17,10 +17,12 @@ import type {
   ApiError,
   ApiErrorCode,
   Budget,
+  FeedbackRequestContext,
   ItineraryAction,
   ItineraryResponse,
   ItineraryTarget,
   Pace,
+  TripFeedbackEntry,
   TripInput,
 } from "@/lib/types";
 
@@ -44,6 +46,11 @@ type PendingRequest = {
   action: ItineraryAction;
   target: ItineraryTarget;
   input: TripInput;
+  replaceTarget?: {
+    title: string;
+    mapQuery: string;
+    tags: string[];
+  };
 };
 
 type StatusBanner = {
@@ -66,6 +73,7 @@ export default function Home() {
   const [copiedCalendar, setCopiedCalendar] = useState(false);
   const [downloadedCalendar, setDownloadedCalendar] = useState(false);
   const [expandedDays, setExpandedDays] = useState<number[]>([]);
+  const [feedbackEntries, setFeedbackEntries] = useState<TripFeedbackEntry[]>([]);
   const activeRequestId = useRef(0);
   const statusTimeoutRef = useRef<number | null>(null);
   const lastRequestRef = useRef<PendingRequest | null>(null);
@@ -118,10 +126,48 @@ export default function Home() {
     clearFieldError("interests");
   }
 
+  function persistTripState(nextPayload: ItineraryResponse, nextFeedbackEntries = feedbackEntries) {
+    const savedTrip = saveTripToStorage(localStorage, { ...nextPayload, feedback: nextFeedbackEntries });
+    window.location.hash = `trip=${encodeURIComponent(savedTrip.token)}`;
+    setPayload(savedTrip);
+  }
+
+  function buildFeedbackEntry(
+    activity: NonNullable<ItineraryResponse["itinerary"]>["days"][number]["activities"][number],
+    sentiment: TripFeedbackEntry["sentiment"],
+  ): TripFeedbackEntry {
+    return {
+      activityKey: feedbackActivityKey(activity.title, activity.mapQuery),
+      title: activity.title,
+      mapQuery: activity.mapQuery,
+      tags: activity.tags,
+      sentiment,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function buildFeedbackContext(
+    replaceTarget?: PendingRequest["replaceTarget"],
+  ): FeedbackRequestContext | undefined {
+    const liked = feedbackEntries.filter((entry) => entry.sentiment === "like");
+    const avoided = feedbackEntries.filter((entry) => entry.sentiment === "avoid");
+
+    if (liked.length === 0 && avoided.length === 0 && !replaceTarget) {
+      return undefined;
+    }
+
+    return {
+      liked,
+      avoided,
+      replaceTarget,
+    };
+  }
+
   async function requestItinerary(
     action: ItineraryAction = "generate",
     target: ItineraryTarget = {},
     inputOverride?: TripInput,
+    replaceTarget?: PendingRequest["replaceTarget"],
   ) {
     const requestId = (activeRequestId.current += 1);
     const requestInput = inputOverride || tripInput;
@@ -151,7 +197,7 @@ export default function Home() {
     }
 
     setFieldErrors({});
-    const pendingRequest = { action, target, input: requestInputWithDefaults };
+    const pendingRequest = { action, target, input: requestInputWithDefaults, replaceTarget };
     lastRequestRef.current = pendingRequest;
     setIsLoading(true);
     showBanner({
@@ -170,6 +216,7 @@ export default function Home() {
           token,
           tripInput: requestInputWithDefaults,
           existingItinerary: payload?.itinerary || null,
+          feedback: buildFeedbackContext(replaceTarget),
         }),
       });
 
@@ -184,7 +231,7 @@ export default function Home() {
       setPayload(nextPayload);
       setToken(nextPayload.token);
       setTripInput(nextPayload.tripInput);
-      saveTrip(nextPayload);
+      persistTripState(nextPayload);
       showBanner(
         {
           tone: "success",
@@ -210,12 +257,6 @@ export default function Home() {
     }
   }
 
-  function saveTrip(nextPayload: ItineraryResponse) {
-    const savedTrip = saveTripToStorage(localStorage, nextPayload);
-    window.location.hash = `trip=${encodeURIComponent(savedTrip.token)}`;
-    setPayload(savedTrip);
-  }
-
   function loadSharedTrip() {
     const tripToken = parseTripTokenFromHash(window.location.hash);
     if (!tripToken) return false;
@@ -233,6 +274,7 @@ export default function Home() {
     setPayload(savedPayload);
     setToken(savedPayload.token);
     setTripInput(savedPayload.tripInput);
+    setFeedbackEntries(savedPayload.feedback || []);
     setFieldErrors({});
     showBanner(
       {
@@ -384,6 +426,7 @@ export default function Home() {
     setPayload(null);
     setToken(null);
     setTripInput(defaultInput);
+    setFeedbackEntries([]);
     setFieldErrors({});
     showBanner(
       {
@@ -398,7 +441,74 @@ export default function Home() {
   function retryLastRequest() {
     const lastRequest = lastRequestRef.current;
     if (!lastRequest || isLoading) return;
-    void requestItinerary(lastRequest.action, lastRequest.target, lastRequest.input);
+    void requestItinerary(
+      lastRequest.action,
+      lastRequest.target,
+      lastRequest.input,
+      lastRequest.replaceTarget,
+    );
+  }
+
+  function setActivityFeedback(
+    activity: NonNullable<ItineraryResponse["itinerary"]>["days"][number]["activities"][number],
+    sentiment: TripFeedbackEntry["sentiment"],
+  ) {
+    const nextEntry = buildFeedbackEntry(activity, sentiment);
+    const nextFeedbackEntries = [
+      nextEntry,
+      ...feedbackEntries.filter((entry) => entry.activityKey !== nextEntry.activityKey),
+    ];
+
+    setFeedbackEntries(nextFeedbackEntries);
+    if (payload) {
+      persistTripState(payload, nextFeedbackEntries);
+    }
+
+    showBanner(
+      {
+        tone: "success",
+        title: sentiment === "like" ? "Activity saved as a favorite" : "Activity marked as not for this trip",
+        message:
+          sentiment === "like"
+            ? "Future changes will try to keep this stop or its style in the plan."
+            : "Future changes will try to avoid this place or similar stop types.",
+      },
+      2400,
+    );
+  }
+
+  function feedbackStatusForActivity(
+    activity: NonNullable<ItineraryResponse["itinerary"]>["days"][number]["activities"][number],
+  ) {
+    return feedbackEntries.find((entry) => entry.activityKey === feedbackActivityKey(activity.title, activity.mapQuery));
+  }
+
+  function replaceActivityWithSimilar(
+    dayIndex: number,
+    activityIndex: number,
+    activity: NonNullable<ItineraryResponse["itinerary"]>["days"][number]["activities"][number],
+  ) {
+    const nextEntry = buildFeedbackEntry(activity, "avoid");
+    const nextFeedbackEntries = [
+      nextEntry,
+      ...feedbackEntries.filter((entry) => entry.activityKey !== nextEntry.activityKey),
+    ];
+
+    setFeedbackEntries(nextFeedbackEntries);
+    if (payload) {
+      persistTripState(payload, nextFeedbackEntries);
+    }
+
+    void requestItinerary(
+      "swap-activity",
+      { dayIndex, activityIndex },
+      undefined,
+      {
+        title: activity.title,
+        mapQuery: activity.mapQuery,
+        tags: activity.tags,
+      },
+    );
   }
 
   return (
@@ -689,85 +799,111 @@ export default function Home() {
                       </div>
                     </header>
                     {expandedDays.includes(dayIndex) ? (
-                      day.activities.map((activity, activityIndex) => (
-                        <div className="activity" key={`${activity.title}-${activityIndex}`}>
-                          <div className="time">{activity.time}</div>
-                          <div>
-                            <div className="activity-title-row">
-                              <h4>{activity.title}</h4>
-                              {activity.neighborhood ? (
-                                <span className="detail-chip detail-chip-location">{activity.neighborhood}</span>
-                              ) : null}
+                      day.activities.map((activity, activityIndex) => {
+                        const feedbackStatus = feedbackStatusForActivity(activity);
+
+                        return (
+                          <div className="activity" key={`${activity.title}-${activityIndex}`}>
+                            <div className="time">{activity.time}</div>
+                            <div>
+                              <div className="activity-title-row">
+                                <h4>{activity.title}</h4>
+                                {activity.neighborhood ? (
+                                  <span className="detail-chip detail-chip-location">{activity.neighborhood}</span>
+                                ) : null}
+                                {feedbackStatus?.sentiment === "like" ? (
+                                  <span className="detail-chip detail-chip-liked">Liked</span>
+                                ) : null}
+                                {feedbackStatus?.sentiment === "avoid" ? (
+                                  <span className="detail-chip detail-chip-avoided">Skip next time</span>
+                                ) : null}
+                              </div>
+                              <p>{activity.description}</p>
+                              <div className="detail-grid" aria-label="Activity details">
+                                {activity.setting ? (
+                                  <div className="detail-card">
+                                    <span className="detail-label">Setting</span>
+                                    <strong>{activity.setting}</strong>
+                                  </div>
+                                ) : null}
+                                {activity.familyFriendly ? (
+                                  <div className="detail-card">
+                                    <span className="detail-label">Kid fit</span>
+                                    <strong>{familyFriendlyLabel(activity.familyFriendly)}</strong>
+                                  </div>
+                                ) : null}
+                                {activity.bookingHint ? (
+                                  <div className="detail-card detail-card-wide">
+                                    <span className="detail-label">Booking hint</span>
+                                    <strong>{activity.bookingHint}</strong>
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="tags">
+                                {activity.tags.map((tag) => (
+                                  <span className="tag" key={tag}>
+                                    {tag}
+                                  </span>
+                                ))}
+                                <span className="tag">{activity.duration}</span>
+                                <span className="tag">{activity.cost}</span>
+                              </div>
                             </div>
-                            <p>{activity.description}</p>
-                            <div className="detail-grid" aria-label="Activity details">
-                              {activity.setting ? (
-                                <div className="detail-card">
-                                  <span className="detail-label">Setting</span>
-                                  <strong>{activity.setting}</strong>
-                                </div>
-                              ) : null}
-                              {activity.familyFriendly ? (
-                                <div className="detail-card">
-                                  <span className="detail-label">Kid fit</span>
-                                  <strong>{familyFriendlyLabel(activity.familyFriendly)}</strong>
-                                </div>
-                              ) : null}
-                              {activity.bookingHint ? (
-                                <div className="detail-card detail-card-wide">
-                                  <span className="detail-label">Booking hint</span>
-                                  <strong>{activity.bookingHint}</strong>
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="tags">
-                              {activity.tags.map((tag) => (
-                                <span className="tag" key={tag}>
-                                  {tag}
-                                </span>
-                              ))}
-                              <span className="tag">{activity.duration}</span>
-                              <span className="tag">{activity.cost}</span>
+                            <div className="activity-actions">
+                              <div className="activity-action-group">
+                                <button
+                                  className={`small-btn subtle-btn${feedbackStatus?.sentiment === "like" ? " is-selected" : ""}`}
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => setActivityFeedback(activity, "like")}
+                                >
+                                  Like
+                                </button>
+                                <button
+                                  className={`small-btn subtle-btn${feedbackStatus?.sentiment === "avoid" ? " is-selected" : ""}`}
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => setActivityFeedback(activity, "avoid")}
+                                >
+                                  Not for us
+                                </button>
+                                <button
+                                  className="small-btn"
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => replaceActivityWithSimilar(dayIndex, activityIndex, activity)}
+                                >
+                                  Replace with similar
+                                </button>
+                                <button
+                                  className="small-btn"
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => requestItinerary("kid-friendly-activity", { dayIndex, activityIndex })}
+                                >
+                                  More kid-friendly
+                                </button>
+                                <button
+                                  className="small-btn"
+                                  type="button"
+                                  disabled={isLoading}
+                                  onClick={() => requestItinerary("remove-activity", { dayIndex, activityIndex })}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <a
+                                className="map-link"
+                                href={buildGoogleMapsSearchUrl(activity.mapQuery)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Open in Google Maps
+                              </a>
                             </div>
                           </div>
-                          <div className="activity-actions">
-                            <div className="activity-action-group">
-                              <button
-                                className="small-btn"
-                                type="button"
-                                disabled={isLoading}
-                                onClick={() => requestItinerary("swap-activity", { dayIndex, activityIndex })}
-                              >
-                                Swap
-                              </button>
-                              <button
-                                className="small-btn"
-                                type="button"
-                                disabled={isLoading}
-                                onClick={() => requestItinerary("kid-friendly-activity", { dayIndex, activityIndex })}
-                              >
-                                More kid-friendly
-                              </button>
-                              <button
-                                className="small-btn"
-                                type="button"
-                                disabled={isLoading}
-                                onClick={() => requestItinerary("remove-activity", { dayIndex, activityIndex })}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                            <a
-                              className="map-link"
-                              href={buildGoogleMapsSearchUrl(activity.mapQuery)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Open in Google Maps
-                            </a>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="day-collapsed-note">
                         Expand this day to review the full stop list, activity details, and map links.
@@ -870,6 +1006,23 @@ export default function Home() {
             </section>
 
             <section className="side-card">
+              <h2>Trip feedback</h2>
+              <p className="hint">
+                Save what worked and what to avoid. Future swaps and refreshes use this trip-only context.
+              </p>
+              <ul className="summary-list feedback-list">
+                <li>
+                  <span>Liked stops</span>
+                  <strong>{feedbackEntries.filter((entry) => entry.sentiment === "like").length}</strong>
+                </li>
+                <li>
+                  <span>Avoid next time</span>
+                  <strong>{feedbackEntries.filter((entry) => entry.sentiment === "avoid").length}</strong>
+                </li>
+              </ul>
+            </section>
+
+            <section className="side-card">
               <h2>Planner notes</h2>
               <ul className="notes-list">
                 {(itinerary?.notes || ["Verify tickets, hours, and travel times before going."]).map((note) => (
@@ -949,6 +1102,10 @@ function DaySkeletonGroup({ dayCount }: { dayCount: number }) {
       ))}
     </div>
   );
+}
+
+function feedbackActivityKey(title: string, mapQuery: string) {
+  return `${title.trim().toLowerCase()}::${mapQuery.trim().toLowerCase()}`;
 }
 
 function subtitle(input: TripInput) {

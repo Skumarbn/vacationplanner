@@ -715,7 +715,7 @@ Verification notes:
 
 ## 18. User Feedback Loop
 
-Status: Not started
+Status: Completed
 Priority: Later
 Agent owner: Frontend + UX
 
@@ -736,6 +736,19 @@ Acceptance checks:
 Dependencies:
 
 - Best after item 8.
+
+Progress notes:
+
+- Added per-activity `Like`, `Not for us`, and `Replace with similar` controls directly on itinerary cards so travelers can steer changes without leaving the current trip view.
+- Feedback now persists with the existing browser-local saved trip payload, so reloads and `#trip=<token>` restores keep the same liked and avoided stops for that trip.
+- Regeneration and swap requests now send trip-local feedback context through the itinerary request payload, and demo-mode repair/swap logic uses avoided places and tags to steer replacements away from rejected stops.
+- Added a sidebar feedback summary so users can see how much trip-specific guidance is currently shaping future changes.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Manual browser verification on July 28, 2026 at `http://localhost:3001`: the generated itinerary rendered `Like`, `Not for us`, and `Replace with similar` on each activity card, and triggering `Replace with similar` changed the targeted stop while keeping the trip loaded under the same local `#trip=` token.
 
 ## 19. Trip Export
 

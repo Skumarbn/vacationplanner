@@ -1,4 +1,4 @@
-import type { ItineraryResponse } from "./types.ts";
+import type { ItineraryResponse, TripFeedbackEntry } from "./types.ts";
 
 export const TRIP_STORAGE_PREFIX = "vacationplanner:";
 
@@ -7,6 +7,7 @@ export type SavedTrip = ItineraryResponse & {
   savedAt: string;
   updatedAt: string;
   expiresAt?: string;
+  feedback?: TripFeedbackEntry[];
 };
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem" | "key" | "length">;
@@ -26,7 +27,7 @@ export function buildLocalTripUrl(origin: string, token: string) {
 
 export function saveTripToStorage(
   storage: StorageLike,
-  payload: ItineraryResponse,
+  payload: ItineraryResponse & { feedback?: TripFeedbackEntry[] },
   now = new Date().toISOString(),
 ) {
   const storageKey = getTripStorageKey(payload.token);
@@ -40,6 +41,7 @@ export function saveTripToStorage(
     savedAt: now,
     updatedAt: now,
     expiresAt: previousPayload?.expiresAt,
+    feedback: payload.feedback || previousPayload?.feedback || [],
   };
 
   storage.setItem(storageKey, JSON.stringify(savedTrip));
@@ -161,6 +163,7 @@ function normalizeSavedTrip(savedTrip: Partial<SavedTrip>) {
     createdAt: savedTrip.createdAt || fallbackTimestamp,
     savedAt: savedTrip.savedAt || fallbackTimestamp,
     updatedAt: savedTrip.updatedAt || savedTrip.savedAt || savedTrip.createdAt || fallbackTimestamp,
+    feedback: Array.isArray(savedTrip.feedback) ? savedTrip.feedback : [],
   } as SavedTrip;
 }
 
