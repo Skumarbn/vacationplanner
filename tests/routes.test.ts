@@ -326,6 +326,83 @@ test("POST /api/itinerary retries mocked provider output when the first response
   assert.equal(body.itinerary.days[0].activities[0].title, "California Academy of Sciences");
 });
 
+test("POST /api/itinerary rejects empty mocked provider responses", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () =>
+    new Response(JSON.stringify({ output: [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as Record<string, unknown>;
+  assert.equal(body.code, "malformed_response");
+  assert.equal(body.error, "The itinerary provider returned an empty response.");
+});
+
+test("POST /api/itinerary rejects malformed mocked provider responses after one repair retry", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+  let callCount = 0;
+
+  global.fetch = async () => {
+    callCount += 1;
+
+    return new Response(JSON.stringify({ output_text: "{not valid json" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(callCount, 2);
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as Record<string, unknown>;
+  assert.equal(body.code, "malformed_response");
+  assert.equal(body.error, "The itinerary provider returned malformed data.");
+});
+
 test("POST /api/itinerary sanitizes provider authentication errors", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";

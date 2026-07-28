@@ -579,6 +579,7 @@ Completion notes:
 - Added unit coverage for trip input validation, 1-day and 2-day fallback itinerary generation, and regeneration behavior in `tests/itinerary.test.ts`.
 - Added integration coverage for `POST /api/itinerary` plus deployment health coverage for `GET /api/health` in `tests/routes.test.ts`.
 - Added a mocked-provider route test so no real OpenAI call is required when exercising the provider path.
+- Expanded mocked-provider route coverage for empty Responses payloads and malformed JSON retry exhaustion so provider failure handling stays testable without real OpenAI credentials.
 
 Additional verification notes:
 
@@ -587,6 +588,7 @@ Additional verification notes:
 - Reverified on July 2, 2026 from `main`: `npm run build` passed, demo generation still returned exact San Francisco place names plus enriched activity fields, and invalid action/input requests still returned structured `validation_error` responses.
 - Reverified on July 9, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for OpenAI retry/repair on generic first-pass output and sanitized authentication failures, and `npm run build` passed on Next.js 15.5.19.
 - Reverified on July 26, 2026 from synced `main`: `npm test` passed with new env/config coverage for production startup validation and health mode reporting, and `npm run build` still passed with the expanded suite.
+- Reverified on July 28, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for empty and malformed Responses payloads, and `npm run build` passed afterward.
 
 ## 15. Deployment
 
