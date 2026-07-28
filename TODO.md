@@ -79,6 +79,7 @@ Progress notes:
 - Strengthened the OpenAI prompt to require exact place names, named areas, and Google-Maps-ready `mapQuery` values.
 - Added stronger destination-specific demo catalogs for San Francisco, New York City, and Paris instead of generic placeholder activities.
 - Full OpenAI acceptance verification is still blocked until a real `OPENAI_API_KEY` is available in the execution environment.
+- Rechecked on July 28, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so the real-provider acceptance pass remains blocked even though local demo and mocked-provider checks are green.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -499,6 +500,14 @@ Progress notes:
 - API errors now return structured `code` and `details` fields for validation, provider, rate-limit, and malformed-response cases.
 - Provider messages are sanitized before returning them to the browser.
 - The current UI also shows persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures; the remaining acceptance risk is real-credential verification of the OpenAI-specific path.
+- Hardened the OpenAI provider path against transport failures and unreadable error bodies so network/runtime faults no longer leak raw fetch or parser messages through the API.
+- Added invalid-destination classification for upstream destination/location rejections, keeping configuration/authentication sanitization separate from user-fixable destination errors.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on July 28, 2026 with mocked-provider coverage in `tests/routes.test.ts`: authentication errors stay sanitized, vague or unsupported destination errors return `invalid_destination`, and transport failures return a safe `provider_error` message without exposing raw provider details.
 
 ## 13. Environment And Config
 

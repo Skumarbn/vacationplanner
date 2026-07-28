@@ -446,6 +446,83 @@ test("POST /api/itinerary sanitizes provider authentication errors", async (t) =
   assert.equal(body.error, "The itinerary provider rejected the request configuration.");
 });
 
+test("POST /api/itinerary classifies invalid destination provider errors", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: "Unsupported destination: the location provided is too vague to plan safely.",
+        },
+      }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "Atlantis",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  const body = (await response.json()) as Record<string, unknown>;
+  assert.equal(body.code, "invalid_destination");
+  assert.equal(body.error, "The destination could not be planned with the current request.");
+});
+
+test("POST /api/itinerary converts provider transport failures into safe provider errors", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () => {
+    throw new TypeError("fetch failed");
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 502);
+  const body = (await response.json()) as Record<string, unknown>;
+  assert.equal(body.code, "provider_error");
+  assert.equal(body.error, "The itinerary provider could not be reached. Please try again shortly.");
+});
+
 test("GET /api/health returns OK with the active mode", async () => {
   process.env.PORT = "3000";
   delete process.env.APP_URL;

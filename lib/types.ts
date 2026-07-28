@@ -11,6 +11,26 @@ export type ItineraryAction =
 
 export type ActivitySetting = "Indoor" | "Outdoor" | "Mixed";
 export type FamilyFriendlyLevel = "High" | "Medium" | "Low";
+export type FeedbackSentiment = "like" | "avoid";
+
+export type TripFeedbackEntry = {
+  activityKey: string;
+  title: string;
+  mapQuery: string;
+  tags: string[];
+  sentiment: FeedbackSentiment;
+  createdAt: string;
+};
+
+export type FeedbackRequestContext = {
+  liked: TripFeedbackEntry[];
+  avoided: TripFeedbackEntry[];
+  replaceTarget?: {
+    title: string;
+    mapQuery: string;
+    tags: string[];
+  };
+};
 
 export type TripInput = {
   destination: string;
@@ -67,6 +87,7 @@ export type ItineraryRequest = {
   token?: string;
   tripInput?: Partial<TripInput>;
   existingItinerary?: Itinerary | null;
+  feedback?: FeedbackRequestContext;
 };
 
 export type ItineraryResponse = {

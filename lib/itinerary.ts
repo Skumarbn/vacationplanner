@@ -3,6 +3,7 @@ import type {
   ActivitySetting,
   ApiErrorCode,
   Budget,
+  FeedbackRequestContext,
   FamilyFriendlyLevel,
   Itinerary,
   ItineraryAction,
@@ -227,26 +228,29 @@ export async function generateItinerary({
   action,
   existingItinerary,
   target,
+  feedback,
 }: {
   input: TripInput;
   action: ItineraryAction;
   existingItinerary: Itinerary | null;
   target: ItineraryTarget;
+  feedback?: FeedbackRequestContext;
 }): Promise<{ itinerary: Itinerary; generatedBy: "openai" | "demo"; model: string }> {
   validateActionTarget(action, target, existingItinerary);
 
   if (process.env.OPENAI_API_KEY) {
-    const itinerary = await callOpenAI(input, action, existingItinerary, target);
+    const itinerary = await callOpenAI(input, action, existingItinerary, target, feedback);
     return { itinerary, generatedBy: "openai", model: OPENAI_MODEL };
   }
 
   return {
     itinerary: repairItinerary(
-      fallbackItinerary(input, action, existingItinerary, target),
+      fallbackItinerary(input, action, existingItinerary, target, feedback),
       input,
       action,
       existingItinerary,
       target,
+      feedback,
     ),
     generatedBy: "demo",
     model: "local-demo",
@@ -283,6 +287,7 @@ function buildPrompt(
   action: ItineraryAction,
   existingItinerary: Itinerary | null,
   target: ItineraryTarget,
+  feedback: FeedbackRequestContext | undefined,
   repairIssues: string[] = [],
 ) {
   return [
@@ -299,6 +304,7 @@ function buildPrompt(
           target,
           tripInput: input,
           existingItinerary,
+          feedback,
           requirements: [
             "Create exactly the requested number of days.",
             "Each day should have 2-4 activities depending on pace, and family trips should stay lighter.",
@@ -308,6 +314,8 @@ function buildPrompt(
             "Every activity must include title, description, duration, cost, tags, mapQuery, neighborhood, bookingHint, setting, and familyFriendly.",
             "Use cost labels $, $$, or $$$ only.",
             "If regenerating or changing one day/activity, preserve unrelated itinerary sections.",
+            "Use liked activities as anchors when possible and avoid previously rejected places or activity styles.",
+            "If replaceTarget is provided, replace that stop with a similar option instead of changing the entire day.",
             "Include a note reminding the user to verify hours, tickets, and travel times.",
           ],
           repairIssues,
@@ -324,32 +332,15 @@ async function callOpenAI(
   action: ItineraryAction,
   existingItinerary: Itinerary | null,
   target: ItineraryTarget,
+  feedback?: FeedbackRequestContext,
 ): Promise<Itinerary> {
   let repairIssues: string[] = [];
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        reasoning: { effort: "low" },
-        input: buildPrompt(input, action, existingItinerary, target, repairIssues),
-        text: {
-          format: {
-            type: "json_schema",
-            name: "vacation_itinerary",
-            strict: true,
-            schema: itinerarySchema,
-          },
-        },
-      }),
-    });
-
-    const data = await response.json();
+    const response = await requestProvider(
+      buildPrompt(input, action, existingItinerary, target, feedback, repairIssues),
+    );
+    const data = await readProviderPayload(response);
 
     if (!response.ok) {
       throw createProviderError(response.status, data);
@@ -385,7 +376,7 @@ async function callOpenAI(
       continue;
     }
 
-    return repairItinerary(parsed, input, action, existingItinerary, target);
+    return repairItinerary(parsed, input, action, existingItinerary, target, feedback);
   }
 
   throw new ItineraryError(
@@ -393,6 +384,73 @@ async function callOpenAI(
     "The itinerary provider returned malformed data.",
     502,
   );
+}
+
+async function requestProvider(prompt: ReturnType<typeof buildPrompt>) {
+  try {
+    return await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        reasoning: { effort: "low" },
+        input: prompt,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "vacation_itinerary",
+            strict: true,
+            schema: itinerarySchema,
+          },
+        },
+      }),
+    });
+  } catch {
+    throw new ItineraryError(
+      "provider_error",
+      "The itinerary provider could not be reached. Please try again shortly.",
+      502,
+    );
+  }
+}
+
+async function readProviderPayload(response: Response): Promise<unknown> {
+  let rawText = "";
+
+  try {
+    rawText = await response.text();
+  } catch {
+    throw new ItineraryError(
+      "provider_error",
+      "The itinerary provider returned an unreadable response.",
+      502,
+    );
+  }
+
+  if (!rawText.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawText) as unknown;
+  } catch {
+    if (response.ok) {
+      throw new ItineraryError(
+        "malformed_response",
+        "The itinerary provider returned malformed data.",
+        502,
+      );
+    }
+
+    throw new ItineraryError(
+      "provider_error",
+      "The itinerary provider returned an unreadable error response.",
+      502,
+    );
+  }
 }
 
 function createProviderError(status: number, data: unknown) {
@@ -409,10 +467,24 @@ function createProviderError(status: number, data: unknown) {
     );
   }
 
+  if (isInvalidDestinationMessage(providerMessage)) {
+    return new ItineraryError(
+      "invalid_destination",
+      "The destination could not be planned with the current request.",
+      400,
+    );
+  }
+
   return new ItineraryError(
     "provider_error",
     sanitizeProviderMessage(providerMessage),
     status >= 500 ? 502 : 400,
+  );
+}
+
+function isInvalidDestinationMessage(message: string) {
+  return /(invalid|unknown|unsupported|unclear|too vague).*(destination|location)|could not.*(destination|location)|unable to.*(destination|location)/i.test(
+    message,
   );
 }
 
@@ -497,6 +569,7 @@ function fallbackItinerary(
   action: ItineraryAction,
   existingItinerary: Itinerary | null,
   target: ItineraryTarget,
+  feedback?: FeedbackRequestContext,
 ): Itinerary {
   const base =
     existingItinerary && action !== "generate"
@@ -513,7 +586,8 @@ function fallbackItinerary(
       input,
       target.dayIndex!,
       target.activityIndex!,
-      currentActivity?.title,
+      currentActivity,
+      feedback,
     );
   }
 
@@ -565,6 +639,7 @@ function repairItinerary(
   action: ItineraryAction,
   existingItinerary: Itinerary | null,
   target: ItineraryTarget,
+  feedback?: FeedbackRequestContext,
 ) {
   const repaired = structuredClone(itinerary);
 
@@ -626,6 +701,8 @@ function repairItinerary(
       activities: qualityActivities,
     };
   });
+
+  applyFeedbackRules(repaired, input, feedback);
 
   if (
     existingItinerary &&
@@ -1074,18 +1151,65 @@ function createAlternativeActivity(
   input: TripInput,
   dayIndex: number,
   activityIndex: number,
-  currentTitle?: string,
+  currentActivity?: Activity,
+  feedback?: FeedbackRequestContext,
 ): Activity {
   const placeSet = getPlaceSet(input.destination);
+  const avoidedKeys = new Set((feedback?.avoided || []).map((entry) => entry.activityKey));
+  const avoidedTags = new Set(
+    (feedback?.avoided || []).flatMap((entry) => entry.tags.map((tag) => tag.toLowerCase())),
+  );
+  const preferredTags = new Set(
+    (feedback?.replaceTarget?.tags || currentActivity?.tags || []).map((tag) => tag.toLowerCase()),
+  );
 
   for (let offset = 1; offset <= placeSet.activities.length; offset += 1) {
     const candidate = createFallbackActivity(input, dayIndex, activityIndex, offset);
-    if (!currentTitle || candidate.title !== currentTitle) {
+    if (
+      candidate.title !== currentActivity?.title &&
+      !avoidedKeys.has(getActivityKey(candidate)) &&
+      !candidate.tags.some((tag) => avoidedTags.has(tag.toLowerCase())) &&
+      (preferredTags.size === 0 ||
+        candidate.tags.some((tag) => preferredTags.has(tag.toLowerCase())))
+    ) {
       return candidate;
     }
   }
 
   return createFallbackActivity(input, dayIndex, activityIndex, 1);
+}
+
+function applyFeedbackRules(
+  itinerary: Itinerary,
+  input: TripInput,
+  feedback?: FeedbackRequestContext,
+) {
+  if (!feedback || feedback.avoided.length === 0) {
+    return;
+  }
+
+  const avoidedKeys = new Set(feedback.avoided.map((entry) => entry.activityKey));
+  const avoidedTags = new Set(
+    feedback.avoided.flatMap((entry) => entry.tags.map((tag) => tag.toLowerCase())),
+  );
+
+  itinerary.days.forEach((day, dayIndex) => {
+    day.activities = day.activities.map((activity, activityIndex) => {
+      const matchesAvoided =
+        avoidedKeys.has(getActivityKey(activity)) ||
+        activity.tags.some((tag) => avoidedTags.has(tag.toLowerCase()));
+
+      return matchesAvoided
+        ? createAlternativeActivity(input, dayIndex, activityIndex, activity, feedback)
+        : activity;
+    });
+  });
+
+  itinerary.summary.activityCount = countActivities(itinerary);
+}
+
+function getActivityKey(activity: Pick<Activity, "title" | "mapQuery">) {
+  return `${activity.title.trim().toLowerCase()}::${activity.mapQuery.trim().toLowerCase()}`;
 }
 
 function createKidFriendlyActivity(

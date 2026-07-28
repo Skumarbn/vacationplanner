@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       action,
       existingItinerary: payload.existingItinerary || null,
       target: payload.target || {},
+      feedback: payload.feedback,
     });
 
     return NextResponse.json(
