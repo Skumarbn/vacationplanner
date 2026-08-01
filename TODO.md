@@ -35,16 +35,16 @@ Agents should not add map/places provider integrations unless explicitly reassig
 ## Roadmap Snapshot
 
 - P0: Unblock item 1 by running real-credential OpenAI verification, then use those findings to close the remaining item 2 and item 12 acceptance gaps without adding external place-data APIs.
-- P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases.
-- P2: Keep mobile UX follow-through focused on any remaining 375px comfort regressions in item 17; core export/share functionality is shipped for V1.
-- Later: Leave feedback loops and account work in items 18 and 20 out of the active queue until V1 verification is fully closed.
+- P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases; item 7 error-state polish should only move if that verification exposes a UX gap.
+- P2: Keep frontend follow-through focused on any remaining 375px comfort regressions in item 17; export/share and trip-level feedback are already shipped for V1.
+- Later: Keep item 20 account work out of the active queue until V1 verification is fully closed.
 
 ## Current Agent Handoff
 
 - AI + Backend: Treat item 1 as the active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, capture exact failing destinations or provider cases, then patch only the remaining item 2 and item 12 gaps that the credentialed run proves.
-- Frontend + UX: Treat mobile/export as maintenance only; do not add new V1 features. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or error-state wording needed to support the verified provider behavior.
+- Frontend + UX: Treat shipped export/share/feedback work as done for V1 and stay in maintenance mode. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or item 7 error-state wording needed to support the verified provider behavior.
 - Testing + Release: After the next merged implementation change, re-run `npm test` and `npm run build`, then add or tighten coverage only for the provider/auth/repair cases confirmed during item 1 verification.
-- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of later-stage wishlist work.
+- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of item 17 cleanup or later-stage wishlist work.
 
 ## 1. Exact Place Generation With OpenAI
 
