@@ -677,7 +677,7 @@ Verification notes:
 
 ## 17. Mobile Polish
 
-Status: Partial
+Status: Completed
 Priority: P2
 Agent owner: Frontend + UX
 
@@ -707,11 +707,13 @@ Progress notes:
 - Added a mobile-only sticky trip action bar with quick access to edit, calendar-copy, and print/save-PDF actions without forcing users back through the sidebar.
 - Tightened small-screen spacing for results, day cards, share URLs, and sidebar cards while preserving the existing warm visual style.
 - A legacy local-storage compatibility fix now normalizes older saved trips that only had `savedAt`, so existing browser-local trips still load after the new sidebar/export surfaces render.
+- Added a mobile-only sticky planner action bar for the form itself, so 375px users can keep `Generate itinerary` and `View current trip` reachable while editing without relying on the old inline submit row.
 
 Verification notes:
 
 - `npm run build`
 - Manual browser verification on July 9, 2026 at `http://localhost:3000/#trip=vs0mDYMU`: an older saved local trip loaded without crashing, day sections now collapse/expand in place, and the export card rendered alongside the existing local-share controls.
+- Manual browser verification on August 1, 2026 at `http://localhost:3002` in a 375px viewport: the sticky planner action bar stayed pinned 14px above the bottom edge, the inline submit row was hidden on mobile, and the auto-generated itinerary still rendered five day cards plus the existing mobile trip action bar.
 
 ## 18. User Feedback Loop
 
@@ -825,3 +827,4 @@ Dependencies:
 - Skipped `agent/frontend-ux-20260629-loading-states` because it had no diff from `origin/main`.
 - 2026-07-28: Fetched `origin`; local `main` and `origin/main` both point to `5430c94`, so the roadmap baseline now includes the merged calendar export work and itinerary repair hardening from July 25, 2026.
 - Item 10 is complete on `main`; the highest-value unfinished work is now real-credential OpenAI verification plus any evidence-driven follow-up in items 2 and 12.
+- 2026-08-01: Fetched `origin`; local `main` and `origin/main` both point to `d34e39c`, so the roadmap baseline now also includes the merged trip-level activity feedback controls from July 27, 2026.

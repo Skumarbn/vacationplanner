@@ -698,6 +698,29 @@ export default function Home() {
                 onRetry={statusBanner.canRetry ? retryLastRequest : undefined}
               />
             ) : null}
+            <div className="mobile-submit-bar" aria-label="Mobile planner actions">
+              <div className="mobile-submit-meta">
+                <strong>
+                  {tripInput.days} day{tripInput.days === 1 ? "" : "s"} for {tripInput.adults + tripInput.children} traveler
+                  {tripInput.adults + tripInput.children === 1 ? "" : "s"}
+                </strong>
+                <span>Generate without losing your place in the form.</span>
+              </div>
+              <div className="mobile-submit-actions">
+                {itinerary ? (
+                  <button
+                    className="ghost-btn"
+                    type="button"
+                    onClick={() => resultsRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  >
+                    View current trip
+                  </button>
+                ) : null}
+                <button className="primary-btn" type="submit" disabled={isLoading}>
+                  {isLoading ? "Building trip..." : "Generate itinerary"}
+                </button>
+              </div>
+            </div>
           </form>
         </section>
 
