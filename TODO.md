@@ -35,16 +35,16 @@ Agents should not add map/places provider integrations unless explicitly reassig
 ## Roadmap Snapshot
 
 - P0: Unblock item 1 by running real-credential OpenAI verification, then use those findings to close the remaining item 2 and item 12 acceptance gaps without adding external place-data APIs.
-- P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases; item 7 error-state polish should only move if that verification exposes a UX gap.
-- P2: Keep frontend follow-through focused on any remaining 375px comfort regressions in item 17; export/share and trip-level feedback are already shipped for V1.
-- Later: Keep item 20 account work out of the active queue until V1 verification is fully closed.
+- P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases.
+- P2: Keep mobile UX follow-through focused on any remaining 375px comfort regressions in item 17; core export/share functionality is shipped for V1.
+- Later: Leave feedback loops and account work in items 18 and 20 out of the active queue until V1 verification is fully closed.
 
 ## Current Agent Handoff
 
 - AI + Backend: Treat item 1 as the active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, capture exact failing destinations or provider cases, then patch only the remaining item 2 and item 12 gaps that the credentialed run proves.
-- Frontend + UX: Treat shipped export/share/feedback work as done for V1 and stay in maintenance mode. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or item 7 error-state wording needed to support the verified provider behavior.
+- Frontend + UX: Treat mobile/export as maintenance only; do not add new V1 features. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or error-state wording needed to support the verified provider behavior.
 - Testing + Release: After the next merged implementation change, re-run `npm test` and `npm run build`, then add or tighten coverage only for the provider/auth/repair cases confirmed during item 1 verification.
-- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of item 17 cleanup or later-stage wishlist work.
+- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of later-stage wishlist work.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -502,12 +502,15 @@ Progress notes:
 - The current UI also shows persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures; the remaining acceptance risk is real-credential verification of the OpenAI-specific path.
 - Hardened the OpenAI provider path against transport failures and unreadable error bodies so network/runtime faults no longer leak raw fetch or parser messages through the API.
 - Added invalid-destination classification for upstream destination/location rejections, keeping configuration/authentication sanitization separate from user-fixable destination errors.
+- Retryable OpenAI failures now degrade to a structured demo fallback response instead of a hard API failure, so generate/regenerate actions remain usable when the live provider is unavailable.
+- The API now includes an optional `warning` payload with `demo_fallback` plus the fallback reason, while authentication/configuration and invalid-destination errors still stay explicit hard failures.
 
 Verification notes:
 
 - `npm test`
 - `npm run build`
 - Reverified on July 28, 2026 with mocked-provider coverage in `tests/routes.test.ts`: authentication errors stay sanitized, vague or unsupported destination errors return `invalid_destination`, and transport failures return a safe `provider_error` message without exposing raw provider details.
+- Reverified on August 1, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport and `429` provider failures now return `200` demo itineraries with `warning.code = demo_fallback`, while `401` configuration errors and invalid destinations still return structured hard errors.
 
 ## 13. Environment And Config
 
@@ -598,6 +601,7 @@ Additional verification notes:
 - Reverified on July 9, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for OpenAI retry/repair on generic first-pass output and sanitized authentication failures, and `npm run build` passed on Next.js 15.5.19.
 - Reverified on July 26, 2026 from synced `main`: `npm test` passed with new env/config coverage for production startup validation and health mode reporting, and `npm run build` still passed with the expanded suite.
 - Reverified on July 28, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for empty and malformed Responses payloads, and `npm run build` passed afterward.
+- Reverified on August 1, 2026 from synced `main`: `npm test` passed with new `/api/itinerary` integration coverage for feedback-aware `swap-activity` requests preserving the trip token while replacing the targeted stop, and `npm run build` passed afterward on Next.js 15.5.19.
 
 ## 15. Deployment
 
@@ -828,3 +832,4 @@ Dependencies:
 - 2026-07-28: Fetched `origin`; local `main` and `origin/main` both point to `5430c94`, so the roadmap baseline now includes the merged calendar export work and itinerary repair hardening from July 25, 2026.
 - Item 10 is complete on `main`; the highest-value unfinished work is now real-credential OpenAI verification plus any evidence-driven follow-up in items 2 and 12.
 - 2026-08-01: Fetched `origin`; local `main` and `origin/main` both point to `d34e39c`, so the roadmap baseline now also includes the merged trip-level activity feedback controls from July 27, 2026.
+- 2026-08-01: Item 12 remains partial only because real-credential OpenAI verification is still blocked; mocked-provider coverage now confirms demo fallback behavior for retryable transport and rate-limit failures.
