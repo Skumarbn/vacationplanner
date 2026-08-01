@@ -96,6 +96,7 @@ export type ItineraryResponse = {
   token: string;
   generatedBy: "openai" | "demo";
   model: string;
+  warning?: ApiError;
 };
 
 export type ApiErrorCode =

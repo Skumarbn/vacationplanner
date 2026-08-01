@@ -1,8 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server.js";
-import { generateItinerary, ItineraryError, normalizeTripInput } from "../../../lib/itinerary.ts";
+import {
+  generateDemoItinerary,
+  generateItinerary,
+  ItineraryError,
+  normalizeTripInput,
+} from "../../../lib/itinerary.ts";
 import { takeRateLimitToken } from "../../../lib/rate-limit.ts";
-import type { ApiError, ItineraryAction, ItineraryRequest } from "../../../lib/types.ts";
+import type { ApiError, ItineraryAction, ItineraryRequest, ItineraryResponse } from "../../../lib/types.ts";
 
 const allowedActions: ItineraryAction[] = [
   "generate",
@@ -21,6 +26,9 @@ export async function POST(request: Request) {
     limit: getRateLimitMaxRequests(),
     windowMs: rateLimitWindowMs,
   });
+  let payload: ItineraryRequest | null = null;
+  let input: ReturnType<typeof normalizeTripInput> | null = null;
+  let action: ItineraryAction | null = null;
 
   try {
     if (!rateLimit.allowed) {
@@ -41,7 +49,6 @@ export async function POST(request: Request) {
       });
     }
 
-    let payload: ItineraryRequest;
     try {
       payload = JSON.parse(bodyText) as ItineraryRequest;
     } catch {
@@ -57,8 +64,8 @@ export async function POST(request: Request) {
       });
     }
 
-    const input = normalizeTripInput(payload.tripInput);
-    const action = requestedAction as ItineraryAction;
+    input = normalizeTripInput(payload.tripInput);
+    action = requestedAction as ItineraryAction;
 
     const result = await generateItinerary({
       input,
@@ -79,6 +86,27 @@ export async function POST(request: Request) {
       { headers: buildRateLimitHeaders(rateLimit) },
     );
   } catch (error) {
+    if (
+      error instanceof ItineraryError &&
+      error.fallbackToDemo &&
+      payload &&
+      input &&
+      action
+    ) {
+      const demoResult = generateDemoItinerary({
+        input,
+        action,
+        existingItinerary: payload.existingItinerary || null,
+        target: payload.target || {},
+        feedback: payload.feedback,
+      });
+
+      return NextResponse.json(
+        buildDemoFallbackBody(payload, input, demoResult, error),
+        { headers: buildRateLimitHeaders(rateLimit) },
+      );
+    }
+
     const apiError = serializeError(error);
     return NextResponse.json(apiError.body, {
       status: apiError.status,
@@ -104,6 +132,28 @@ function serializeError(error: unknown): { status: number; body: ApiError } {
     body: {
       error: error instanceof Error ? error.message : "Unable to generate itinerary.",
       code: "validation_error",
+    },
+  };
+}
+
+function buildDemoFallbackBody(
+  payload: ItineraryRequest,
+  input: ReturnType<typeof normalizeTripInput>,
+  result: ReturnType<typeof generateDemoItinerary>,
+  error: ItineraryError,
+): ItineraryResponse {
+  return {
+    itinerary: result.itinerary,
+    tripInput: input,
+    token: payload.token || randomBytes(6).toString("base64url"),
+    generatedBy: result.generatedBy,
+    model: result.model,
+    warning: {
+      error: "The live provider was unavailable, so this itinerary was generated in demo mode.",
+      code: "demo_fallback",
+      details: {
+        fallbackReason: error.code,
+      },
     },
   };
 }

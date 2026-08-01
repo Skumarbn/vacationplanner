@@ -46,13 +46,23 @@ export class ItineraryError extends Error {
   code: ApiErrorCode;
   status: number;
   details?: ValidationDetails;
+  fallbackToDemo: boolean;
 
-  constructor(code: ApiErrorCode, message: string, status = 400, details?: ValidationDetails) {
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status = 400,
+    details?: ValidationDetails,
+    options?: {
+      fallbackToDemo?: boolean;
+    },
+  ) {
     super(message);
     this.name = "ItineraryError";
     this.code = code;
     this.status = status;
     this.details = details;
+    this.fallbackToDemo = options?.fallbackToDemo || false;
   }
 }
 
@@ -243,6 +253,28 @@ export async function generateItinerary({
     return { itinerary, generatedBy: "openai", model: OPENAI_MODEL };
   }
 
+  return generateDemoItinerary({
+    input,
+    action,
+    existingItinerary,
+    target,
+    feedback,
+  });
+}
+
+export function generateDemoItinerary({
+  input,
+  action,
+  existingItinerary,
+  target,
+  feedback,
+}: {
+  input: TripInput;
+  action: ItineraryAction;
+  existingItinerary: Itinerary | null;
+  target: ItineraryTarget;
+  feedback?: FeedbackRequestContext;
+}): { itinerary: Itinerary; generatedBy: "demo"; model: string } {
   return {
     itinerary: repairItinerary(
       fallbackItinerary(input, action, existingItinerary, target, feedback),
@@ -413,6 +445,8 @@ async function requestProvider(prompt: ReturnType<typeof buildPrompt>) {
       "provider_error",
       "The itinerary provider could not be reached. Please try again shortly.",
       502,
+      undefined,
+      { fallbackToDemo: true },
     );
   }
 }
@@ -427,6 +461,8 @@ async function readProviderPayload(response: Response): Promise<unknown> {
       "provider_error",
       "The itinerary provider returned an unreadable response.",
       502,
+      undefined,
+      { fallbackToDemo: true },
     );
   }
 
@@ -442,6 +478,8 @@ async function readProviderPayload(response: Response): Promise<unknown> {
         "malformed_response",
         "The itinerary provider returned malformed data.",
         502,
+        undefined,
+        { fallbackToDemo: true },
       );
     }
 
@@ -449,6 +487,8 @@ async function readProviderPayload(response: Response): Promise<unknown> {
       "provider_error",
       "The itinerary provider returned an unreadable error response.",
       502,
+      undefined,
+      { fallbackToDemo: true },
     );
   }
 }
@@ -464,6 +504,8 @@ function createProviderError(status: number, data: unknown) {
       "rate_limited",
       "OpenAI is rate-limiting itinerary generation. Try again shortly.",
       429,
+      undefined,
+      { fallbackToDemo: true },
     );
   }
 
@@ -479,6 +521,8 @@ function createProviderError(status: number, data: unknown) {
     "provider_error",
     sanitizeProviderMessage(providerMessage),
     status >= 500 ? 502 : 400,
+    undefined,
+    { fallbackToDemo: status >= 500 },
   );
 }
 

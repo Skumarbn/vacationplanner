@@ -114,6 +114,83 @@ test("POST /api/itinerary preserves unrelated days during regeneration", async (
   assert.notDeepEqual(regenerateBody.itinerary.days[1], initialBody.itinerary.days[1]);
 });
 
+test("POST /api/itinerary applies feedback when swapping an activity", async () => {
+  const initialResponse = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 2,
+        adults: 2,
+        children: 1,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums", "Kid-friendly"],
+      },
+    }),
+  );
+  const initialBody = (await initialResponse.json()) as {
+    itinerary: {
+      days: Array<{
+        activities: Array<{
+          title: string;
+          mapQuery: string;
+          tags: string[];
+        }>;
+      }>;
+    };
+    token: string;
+    tripInput: ItineraryRequest["tripInput"];
+  };
+  const rejected = initialBody.itinerary.days[0].activities[1];
+
+  const swapResponse = await postItinerary(
+    buildRequest({
+      action: "swap-activity",
+      token: initialBody.token,
+      tripInput: initialBody.tripInput,
+      existingItinerary: initialBody.itinerary as never,
+      target: { dayIndex: 0, activityIndex: 1 },
+      feedback: {
+        liked: [],
+        avoided: [
+          {
+            activityKey: `${rejected.title.toLowerCase()}::${rejected.mapQuery.toLowerCase()}`,
+            title: rejected.title,
+            mapQuery: rejected.mapQuery,
+            tags: rejected.tags,
+            sentiment: "avoid",
+            createdAt: "2026-08-01T10:00:00.000Z",
+          },
+        ],
+        replaceTarget: {
+          title: rejected.title,
+          mapQuery: rejected.mapQuery,
+          tags: rejected.tags,
+        },
+      },
+    }),
+  );
+  const swapBody = (await swapResponse.json()) as {
+    token: string;
+    itinerary: {
+      days: Array<{
+        activities: Array<{
+          title: string;
+          mapQuery: string;
+        }>;
+      }>;
+    };
+  };
+
+  assert.equal(swapResponse.status, 200);
+  assert.equal(swapBody.token, initialBody.token);
+  assert.equal(swapBody.itinerary.days.length, initialBody.itinerary.days.length);
+  assert.notEqual(swapBody.itinerary.days[0].activities[1].title, rejected.title);
+  assert.notEqual(swapBody.itinerary.days[0].activities[1].mapQuery, rejected.mapQuery);
+});
+
 test("POST /api/itinerary uses a mocked provider when OPENAI_API_KEY is set", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";
@@ -489,7 +566,7 @@ test("POST /api/itinerary classifies invalid destination provider errors", async
   assert.equal(body.error, "The destination could not be planned with the current request.");
 });
 
-test("POST /api/itinerary converts provider transport failures into safe provider errors", async (t) => {
+test("POST /api/itinerary falls back to demo mode when provider transport fails", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";
 
@@ -517,10 +594,67 @@ test("POST /api/itinerary converts provider transport failures into safe provide
     }),
   );
 
-  assert.equal(response.status, 502);
-  const body = (await response.json()) as Record<string, unknown>;
-  assert.equal(body.code, "provider_error");
-  assert.equal(body.error, "The itinerary provider could not be reached. Please try again shortly.");
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    generatedBy: string;
+    model: string;
+    warning: Record<string, unknown>;
+  };
+  assert.equal(body.generatedBy, "demo");
+  assert.equal(body.model, "local-demo");
+  assert.equal(body.warning.code, "demo_fallback");
+  assert.equal(
+    body.warning.error,
+    "The live provider was unavailable, so this itinerary was generated in demo mode.",
+  );
+  assert.equal(body.warning.details.fallbackReason, "provider_error");
+});
+
+test("POST /api/itinerary falls back to demo mode when OpenAI rate-limits the request", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+
+  global.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: "Rate limit exceeded.",
+        },
+      }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 0,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    generatedBy: string;
+    warning: Record<string, unknown>;
+  };
+  assert.equal(body.generatedBy, "demo");
+  assert.equal(body.warning.code, "demo_fallback");
+  assert.equal(body.warning.details.fallbackReason, "rate_limited");
 });
 
 test("GET /api/health returns OK with the active mode", async () => {
