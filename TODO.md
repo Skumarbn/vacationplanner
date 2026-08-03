@@ -34,17 +34,17 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Unblock item 1 by running real-credential OpenAI verification, then use those findings to close the remaining item 2 and item 12 acceptance gaps without adding external place-data APIs.
-- P1: Re-run release verification after the next merged implementation change and add targeted coverage for any newly confirmed OpenAI/provider edge cases.
-- P2: Keep mobile UX follow-through focused on any remaining 375px comfort regressions in item 17; core export/share functionality is shipped for V1.
-- Later: Leave feedback loops and account work in items 18 and 20 out of the active queue until V1 verification is fully closed.
+- P0: Run real-credential OpenAI verification for item 1 first, then use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed and then re-run `npm test` plus `npm run build`.
+- P2: Keep frontend work limited to UX fallout from verified provider behavior; mobile/export feature work is otherwise already complete for V1.
+- Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
 
 ## Current Agent Handoff
 
-- AI + Backend: Treat item 1 as the active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, capture exact failing destinations or provider cases, then patch only the remaining item 2 and item 12 gaps that the credentialed run proves.
-- Frontend + UX: Treat mobile/export as maintenance only; do not add new V1 features. If backend verification reveals UX fallout, limit follow-up to item 17 comfort fixes or error-state wording needed to support the verified provider behavior.
-- Testing + Release: After the next merged implementation change, re-run `npm test` and `npm run build`, then add or tighten coverage only for the provider/auth/repair cases confirmed during item 1 verification.
-- Mainline Manager: Keep `main` synced to `origin`, maintain `TODO.md` from merged evidence, and keep item 1 verification plus item 2/item 12 follow-up ahead of later-stage wishlist work.
+- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record the exact destination/provider failures or passes, then patch only the item 2 and item 12 gaps that the credentialed run proves.
+- Frontend + UX: Do not start new V1 feature work. Only respond if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small mobile comfort fixes.
+- Testing + Release: Stand by for the next merged implementation change. When it lands, re-run `npm test` and `npm run build`, then add coverage only for the specific provider/auth/repair behavior confirmed during item 1 verification.
+- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, and keep item 1 verification ahead of any reopened wishlist or post-V1 work.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -149,7 +149,6 @@ Dependencies:
 Progress notes:
 
 - Trips already save to `localStorage` and reload from `#trip=<token>` in the same browser.
-- Current payload only stores `savedAt`; created/updated timestamps, delete/list helpers, and clearer local-only UX are still missing.
 - Added `lib/local-trip.ts` helpers for save/load/delete/list operations with created/updated timestamps and optional expiry handling.
 - Saving a generated trip now updates the URL hash to `#trip=<token>`, so refresh reopens the same locally saved trip in the same browser.
 
@@ -783,8 +782,7 @@ Dependencies:
 
 Progress notes:
 
-- The `Copy itinerary text` action already shipped as part of the local share-link polish, so the remaining scope is print/export-specific presentation rather than basic text portability.
-- Print-friendly layout, PDF export, and calendar-oriented export text are still open.
+- The `Copy itinerary text` action shipped first as part of local share-link polish, and the remaining print/export scope is now complete.
 - Added a dedicated `Take it with you` export card plus a mobile sticky export action so travelers can print/save PDF or copy a calendar-oriented outline from the current local itinerary data.
 - Added print-specific CSS that strips form/sidebar chrome, keeps day cards readable on paper, and exposes map URLs in the printed output.
 - Calendar-oriented export text now includes day headers, times, activity names, descriptions, and map-search strings without requiring API keys.
@@ -833,3 +831,4 @@ Dependencies:
 - Item 10 is complete on `main`; the highest-value unfinished work is now real-credential OpenAI verification plus any evidence-driven follow-up in items 2 and 12.
 - 2026-08-01: Fetched `origin`; local `main` and `origin/main` both point to `d34e39c`, so the roadmap baseline now also includes the merged trip-level activity feedback controls from July 27, 2026.
 - 2026-08-01: Item 12 remains partial only because real-credential OpenAI verification is still blocked; mocked-provider coverage now confirms demo fallback behavior for retryable transport and rate-limit failures.
+- 2026-08-03: Fetched `origin`; local `main` and `origin/main` both point to `ec8906d`, so no implementation work landed after the July 31 documentation refresh and the top priority remains credentialed OpenAI verification for items 1, 2, and 12.
