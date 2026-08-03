@@ -80,6 +80,7 @@ Progress notes:
 - Added stronger destination-specific demo catalogs for San Francisco, New York City, and Paris instead of generic placeholder activities.
 - Full OpenAI acceptance verification is still blocked until a real `OPENAI_API_KEY` is available in the execution environment.
 - Rechecked on July 28, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so the real-provider acceptance pass remains blocked even though local demo and mocked-provider checks are green.
+- Rechecked on August 3, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so item 1 remains blocked pending a real-provider acceptance run.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -514,7 +515,7 @@ Verification notes:
 - `npm run build`
 - Reverified on July 28, 2026 with mocked-provider coverage in `tests/routes.test.ts`: authentication errors stay sanitized, vague or unsupported destination errors return `invalid_destination`, and transport failures return a safe `provider_error` message without exposing raw provider details.
 - Reverified on August 1, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport and `429` provider failures now return `200` demo itineraries with `warning.code = demo_fallback`, while `401` configuration errors and invalid destinations still return structured hard errors.
-- Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty Responses payloads and malformed JSON retries now return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`.
+- Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty or malformed Responses payloads now retry once and then return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`; `npm run build` also passed after rebuilding from a fresh `.next` cache.
 
 ## 13. Environment And Config
 
