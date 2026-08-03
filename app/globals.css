@@ -801,6 +801,20 @@ select[aria-invalid="true"] {
   gap: 10px;
 }
 
+.warning-card {
+  border-color: rgba(249, 115, 22, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 242, 230, 0.96), rgba(255, 250, 242, 0.92));
+}
+
+.warning-card h2 {
+  color: var(--brand-dark);
+}
+
+.warning-card .hint {
+  color: #8a4b17;
+}
+
 .share-actions {
   display: grid;
   gap: 10px;

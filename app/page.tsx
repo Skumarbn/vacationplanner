@@ -61,6 +61,11 @@ type StatusBanner = {
   canRetry?: boolean;
 };
 
+type WarningCardContent = {
+  title: string;
+  message: string;
+};
+
 export default function Home() {
   const [tripInput, setTripInput] = useState<TripInput>(defaultInput);
   const [payload, setPayload] = useState<ItineraryResponse | null>(null);
@@ -81,6 +86,7 @@ export default function Home() {
   const resultsRef = useRef<HTMLElement>(null);
 
   const itinerary = payload?.itinerary;
+  const warningCard = payload?.warning ? warningCardForError(payload.warning) : null;
 
   const shareLink = useMemo(() => {
     if (!payload?.token || typeof window === "undefined") return "Generate a trip first";
@@ -232,17 +238,7 @@ export default function Home() {
       setToken(nextPayload.token);
       setTripInput(nextPayload.tripInput);
       persistTripState(nextPayload);
-      showBanner(
-        {
-          tone: "success",
-          title: nextPayload.generatedBy === "openai" ? "Trip ready" : "Demo trip ready",
-          message:
-            nextPayload.generatedBy === "openai"
-              ? `Generated with ${nextPayload.model}.`
-              : "Generated in demo mode. Add OPENAI_API_KEY to switch to real AI.",
-        },
-        3200,
-      );
+      showBanner(successBannerForPayload(nextPayload), 3200);
     } catch (error) {
       if (requestId === activeRequestId.current) {
         if (isApiError(error) && error.code === "validation_error") {
@@ -973,10 +969,17 @@ export default function Home() {
                 </li>
                 <li>
                   <span>Generator</span>
-                  <strong>{payload?.generatedBy === "openai" ? "OpenAI" : "Demo"}</strong>
+                  <strong>{generatorLabel(payload)}</strong>
                 </li>
               </ul>
             </section>
+
+            {warningCard ? (
+              <section className="side-card warning-card" aria-live="polite">
+                <h2>{warningCard.title}</h2>
+                <p className="hint">{warningCard.message}</p>
+              </section>
+            ) : null}
 
             <section className="side-card share-box">
               <h2>Private link</h2>
@@ -1224,6 +1227,52 @@ function loadingMessage(action: ItineraryAction, target: ItineraryTarget) {
       return "Removing one stop and repairing the day around it.";
     default:
       return "Balancing stops, pacing, and map-ready place names for your trip.";
+  }
+}
+
+function successBannerForPayload(payload: ItineraryResponse): StatusBanner {
+  if (payload.warning) {
+    return {
+      tone: "info",
+      title: payload.warning.code === "demo_fallback" ? "Trip ready in demo mode" : "Trip ready with a warning",
+      message: warningCardForError(payload.warning).message,
+      canRetry: payload.warning.code === "demo_fallback",
+    };
+  }
+
+  return {
+    tone: "success",
+    title: payload.generatedBy === "openai" ? "Trip ready" : "Demo trip ready",
+    message:
+      payload.generatedBy === "openai"
+        ? `Generated with ${payload.model}.`
+        : "Generated in demo mode. Add OPENAI_API_KEY to switch to real AI.",
+  };
+}
+
+function generatorLabel(payload: ItineraryResponse | null) {
+  if (!payload) return "Demo";
+  if (payload.warning?.code === "demo_fallback") return "Demo fallback";
+  return payload.generatedBy === "openai" ? "OpenAI" : "Demo";
+}
+
+function warningCardForError(error: ApiError): WarningCardContent {
+  switch (error.code) {
+    case "demo_fallback":
+      return {
+        title: "Live AI is unavailable",
+        message: "This trip was generated in demo mode after a temporary provider issue. Retry to try the live planner again.",
+      };
+    case "provider_error":
+      return {
+        title: "Provider warning",
+        message: "The planner recovered from a live provider issue while keeping the trip usable.",
+      };
+    default:
+      return {
+        title: "Planner warning",
+        message: error.error,
+      };
   }
 }
 
