@@ -506,6 +506,7 @@ Progress notes:
 - Added invalid-destination classification for upstream destination/location rejections, keeping configuration/authentication sanitization separate from user-fixable destination errors.
 - Retryable OpenAI failures now degrade to a structured demo fallback response instead of a hard API failure, so generate/regenerate actions remain usable when the live provider is unavailable.
 - The API now includes an optional `warning` payload with `demo_fallback` plus the fallback reason, while authentication/configuration and invalid-destination errors still stay explicit hard failures.
+- Repeated empty Responses payloads and repeated malformed JSON payloads now also degrade to a structured demo fallback after one repair retry, keeping the provider path usable without exposing raw malformed-response failures to the browser.
 
 Verification notes:
 
@@ -513,6 +514,7 @@ Verification notes:
 - `npm run build`
 - Reverified on July 28, 2026 with mocked-provider coverage in `tests/routes.test.ts`: authentication errors stay sanitized, vague or unsupported destination errors return `invalid_destination`, and transport failures return a safe `provider_error` message without exposing raw provider details.
 - Reverified on August 1, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport and `429` provider failures now return `200` demo itineraries with `warning.code = demo_fallback`, while `401` configuration errors and invalid destinations still return structured hard errors.
+- Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty Responses payloads and malformed JSON retries now return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`.
 
 ## 13. Environment And Config
 
@@ -604,6 +606,7 @@ Additional verification notes:
 - Reverified on July 26, 2026 from synced `main`: `npm test` passed with new env/config coverage for production startup validation and health mode reporting, and `npm run build` still passed with the expanded suite.
 - Reverified on July 28, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for empty and malformed Responses payloads, and `npm run build` passed afterward.
 - Reverified on August 1, 2026 from synced `main`: `npm test` passed with new `/api/itinerary` integration coverage for feedback-aware `swap-activity` requests preserving the trip token while replacing the targeted stop, and `npm run build` passed afterward on Next.js 15.5.19.
+- Reverified on August 3, 2026 from synced `main`: `npm test` passed with updated mocked-provider coverage asserting demo fallback after repeated empty or malformed Responses payloads, and `npm run build` passed afterward on Next.js 15.5.19.
 
 ## 15. Deployment
 

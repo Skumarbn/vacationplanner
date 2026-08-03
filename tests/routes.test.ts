@@ -403,15 +403,18 @@ test("POST /api/itinerary retries mocked provider output when the first response
   assert.equal(body.itinerary.days[0].activities[0].title, "California Academy of Sciences");
 });
 
-test("POST /api/itinerary rejects empty mocked provider responses", async (t) => {
+test("POST /api/itinerary falls back to demo mode after repeated empty mocked provider responses", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";
+  let callCount = 0;
 
-  global.fetch = async () =>
-    new Response(JSON.stringify({ output: [] }), {
+  global.fetch = async () => {
+    callCount += 1;
+    return new Response(JSON.stringify({ output: [] }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
+  };
 
   t.after(() => {
     global.fetch = originalFetch;
@@ -433,13 +436,21 @@ test("POST /api/itinerary rejects empty mocked provider responses", async (t) =>
     }),
   );
 
-  assert.equal(response.status, 502);
-  const body = (await response.json()) as Record<string, unknown>;
-  assert.equal(body.code, "malformed_response");
-  assert.equal(body.error, "The itinerary provider returned an empty response.");
+  assert.equal(callCount, 2);
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    generatedBy: string;
+    warning: {
+      code: string;
+      details: Record<string, string>;
+    };
+  };
+  assert.equal(body.generatedBy, "demo");
+  assert.equal(body.warning.code, "demo_fallback");
+  assert.equal(body.warning.details.fallbackReason, "malformed_response");
 });
 
-test("POST /api/itinerary rejects malformed mocked provider responses after one repair retry", async (t) => {
+test("POST /api/itinerary falls back to demo mode after malformed mocked provider responses exhaust repair retry", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";
   let callCount = 0;
@@ -474,10 +485,17 @@ test("POST /api/itinerary rejects malformed mocked provider responses after one 
   );
 
   assert.equal(callCount, 2);
-  assert.equal(response.status, 502);
-  const body = (await response.json()) as Record<string, unknown>;
-  assert.equal(body.code, "malformed_response");
-  assert.equal(body.error, "The itinerary provider returned malformed data.");
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    generatedBy: string;
+    warning: {
+      code: string;
+      details: Record<string, string>;
+    };
+  };
+  assert.equal(body.generatedBy, "demo");
+  assert.equal(body.warning.code, "demo_fallback");
+  assert.equal(body.warning.details.fallbackReason, "malformed_response");
 });
 
 test("POST /api/itinerary sanitizes provider authentication errors", async (t) => {

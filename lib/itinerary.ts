@@ -380,10 +380,16 @@ async function callOpenAI(
 
     const text = extractOutputText(data);
     if (!text) {
+      if (attempt === 0) {
+        repairIssues = ["Return valid JSON matching the itinerary schema with no extra text."];
+        continue;
+      }
       throw new ItineraryError(
         "malformed_response",
         "The itinerary provider returned an empty response.",
         502,
+        undefined,
+        { fallbackToDemo: true },
       );
     }
 
@@ -399,6 +405,8 @@ async function callOpenAI(
         "malformed_response",
         "The itinerary provider returned malformed data.",
         502,
+        undefined,
+        { fallbackToDemo: true },
       );
     }
 
@@ -415,6 +423,8 @@ async function callOpenAI(
     "malformed_response",
     "The itinerary provider returned malformed data.",
     502,
+    undefined,
+    { fallbackToDemo: true },
   );
 }
 
