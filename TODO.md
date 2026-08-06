@@ -844,3 +844,5 @@ Dependencies:
 - 2026-08-01: Fetched `origin`; local `main` and `origin/main` both point to `d34e39c`, so the roadmap baseline now also includes the merged trip-level activity feedback controls from July 27, 2026.
 - 2026-08-01: Item 12 remains partial only because real-credential OpenAI verification is still blocked; mocked-provider coverage now confirms demo fallback behavior for retryable transport and rate-limit failures.
 - 2026-08-03: Fetched `origin`; local `main` and `origin/main` both point to `ec8906d`, so no implementation work landed after the July 31 documentation refresh and the top priority remains credentialed OpenAI verification for items 1, 2, and 12.
+- 2026-08-06: Fetched `origin`; local `main` and `origin/main` still match, the scoped frontend items 7, 8, 9, 11, 17, 18, and 19 remain complete, and the current Frontend + UX handoff still blocks new feature work until item 1 gets a credentialed OpenAI verification pass.
+- 2026-08-06: Baseline verification only for the Frontend + UX loop: `npm run build` passed on synced `main`, so no additional user-visible patch was applied in this run.
