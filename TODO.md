@@ -34,17 +34,17 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Run real-credential OpenAI verification for item 1 first, then use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 6, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
 - P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed and then re-run `npm test` plus `npm run build`.
 - P2: Keep frontend work limited to UX fallout from verified provider behavior; mobile/export feature work is otherwise already complete for V1.
 - Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
 
 ## Current Agent Handoff
 
-- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record the exact destination/provider failures or passes, then patch only the item 2 and item 12 gaps that the credentialed run proves.
-- Frontend + UX: Do not start new V1 feature work. Only respond if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small mobile comfort fixes.
-- Testing + Release: Stand by for the next merged implementation change. When it lands, re-run `npm test` and `npm run build`, then add coverage only for the specific provider/auth/repair behavior confirmed during item 1 verification.
-- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, and keep item 1 verification ahead of any reopened wishlist or post-V1 work.
+- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for at least San Francisco plus one additional common destination, then patch only the item 2 and item 12 gaps that the credentialed run proves.
+- Frontend + UX: Do not start new V1 feature work while item 1 is blocked. Only respond if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small mobile comfort fixes around demo fallback versus live OpenAI results.
+- Testing + Release: Stand by for the next merged implementation change. When it lands, re-run `npm test` and `npm run build`, then add coverage only for the exact provider/auth/repair behavior confirmed during item 1 verification.
+- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, and reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -81,6 +81,7 @@ Progress notes:
 - Full OpenAI acceptance verification is still blocked until a real `OPENAI_API_KEY` is available in the execution environment.
 - Rechecked on July 28, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so the real-provider acceptance pass remains blocked even though local demo and mocked-provider checks are green.
 - Rechecked on August 3, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so item 1 remains blocked pending a real-provider acceptance run.
+- Rechecked on August 6, 2026: `OPENAI_API_KEY` is still unset in this automation environment after fetching synced `origin/main`, so item 1 remains the only open V1 blocker.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -119,6 +120,7 @@ Progress notes:
 - A repair pass now normalizes notes, day counts, and missing activity fields before returning API data.
 - Current `main` and `origin/main` both include this pipeline work; the remaining gap is real-credential verification plus any follow-up fixes that verification uncovers.
 - Targeted regenerate/swap/remove actions now preserve unrelated days exactly inside the repair pass instead of relying on provider cooperation alone.
+- No additional pipeline defects are evidenced in git history after the August 3 provider-hardening pass; keep item 2 at `Partial` until a credentialed run confirms exact-place quality in live OpenAI mode.
 
 ## 3. Local Trip Storage
 
@@ -188,7 +190,6 @@ Dependencies:
 Progress notes:
 
 - Share links already use `/#trip=<token>`, support copy, and show a friendly unknown-token message.
-- Portable sharing is still weak because there is no copy-itinerary-text option yet.
 - Added a `Copy itinerary text` action and stronger local-only copy so users understand that browser-local links do not travel across devices or browsers.
 
 Verification notes:
