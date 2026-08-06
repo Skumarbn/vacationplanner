@@ -83,6 +83,10 @@ Progress notes:
 - Rechecked on August 3, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so item 1 remains blocked pending a real-provider acceptance run.
 - Rechecked on August 6, 2026: `OPENAI_API_KEY` is still unset in this automation environment after fetching synced `origin/main`, so item 1 remains the only open V1 blocker.
 
+Verification notes:
+
+- Reverified on August 6, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+
 ## 2. AI Itinerary Quality Pipeline
 
 Status: Partial
