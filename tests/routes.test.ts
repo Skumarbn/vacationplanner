@@ -628,6 +628,67 @@ test("POST /api/itinerary falls back to demo mode when provider transport fails"
   assert.equal(body.warning.details.fallbackReason, "provider_error");
 });
 
+test("POST /api/itinerary keeps the token and untouched days when regenerate-day falls back to demo", async (t) => {
+  const initialResponse = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 2,
+        adults: 2,
+        children: 1,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums", "Kid-friendly"],
+      },
+    }),
+  );
+  const initialBody = (await initialResponse.json()) as {
+    itinerary: { days: Array<Record<string, unknown>> };
+    token: string;
+    tripInput: ItineraryRequest["tripInput"];
+  };
+
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+  global.fetch = async () => {
+    throw new TypeError("fetch failed");
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const regenerateResponse = await postItinerary(
+    buildRequest({
+      action: "regenerate-day",
+      token: initialBody.token,
+      tripInput: initialBody.tripInput,
+      existingItinerary: initialBody.itinerary as never,
+      target: { dayIndex: 1 },
+    }),
+  );
+
+  assert.equal(regenerateResponse.status, 200);
+  const regenerateBody = (await regenerateResponse.json()) as {
+    token: string;
+    generatedBy: string;
+    warning: {
+      code: string;
+      details: Record<string, string>;
+    };
+    itinerary: { days: Array<Record<string, unknown>> };
+  };
+
+  assert.equal(regenerateBody.token, initialBody.token);
+  assert.equal(regenerateBody.generatedBy, "demo");
+  assert.equal(regenerateBody.warning.code, "demo_fallback");
+  assert.equal(regenerateBody.warning.details.fallbackReason, "provider_error");
+  assert.deepEqual(regenerateBody.itinerary.days[0], initialBody.itinerary.days[0]);
+  assert.notDeepEqual(regenerateBody.itinerary.days[1], initialBody.itinerary.days[1]);
+});
+
 test("POST /api/itinerary falls back to demo mode when OpenAI rate-limits the request", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";

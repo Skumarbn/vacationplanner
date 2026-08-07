@@ -602,6 +602,7 @@ Completion notes:
 - Added integration coverage for `POST /api/itinerary` plus deployment health coverage for `GET /api/health` in `tests/routes.test.ts`.
 - Added a mocked-provider route test so no real OpenAI call is required when exercising the provider path.
 - Expanded mocked-provider route coverage for empty Responses payloads and malformed JSON retry exhaustion so provider failure handling stays testable without real OpenAI credentials.
+- Added release-path route coverage for `regenerate-day` demo fallback so provider transport failures now explicitly preserve the existing trip token while keeping untouched itinerary days unchanged.
 
 Additional verification notes:
 
@@ -613,6 +614,7 @@ Additional verification notes:
 - Reverified on July 28, 2026 from synced `main`: `npm test` passed with added mocked-provider coverage for empty and malformed Responses payloads, and `npm run build` passed afterward.
 - Reverified on August 1, 2026 from synced `main`: `npm test` passed with new `/api/itinerary` integration coverage for feedback-aware `swap-activity` requests preserving the trip token while replacing the targeted stop, and `npm run build` passed afterward on Next.js 15.5.19.
 - Reverified on August 3, 2026 from synced `main`: `npm test` passed with updated mocked-provider coverage asserting demo fallback after repeated empty or malformed Responses payloads, and `npm run build` passed afterward on Next.js 15.5.19.
+- Reverified on August 7, 2026 from local `main`: `npm test` passed with new `regenerate-day` fallback coverage asserting token preservation plus untouched-day preservation when the mocked OpenAI transport fails, and `npm run build` passed afterward on Next.js 15.5.19. `git fetch origin` could not complete in this automation environment because outbound GitHub DNS resolution/approval was unavailable, so remote-sync status remains unverified for this run.
 
 ## 15. Deployment
 
@@ -651,6 +653,7 @@ Verification notes:
 - `npm run build`
 - `GET /api/health` covered in `tests/routes.test.ts`
 - Reverified on July 26, 2026 from synced `main`: `npm test` passed with explicit health snapshot and production env validation coverage, and `npm run build` passed without deployment config regressions.
+- Reverified on August 7, 2026 from local `main`: `npm test` and `npm run build` both passed after extending mocked-provider fallback coverage for token-preserving `regenerate-day` behavior. Remote `origin` verification was blocked because `git fetch origin` could not resolve GitHub from this automation environment.
 
 ## 16. Security And Rate Limits
 
