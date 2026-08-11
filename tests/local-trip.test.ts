@@ -142,11 +142,37 @@ test("loadTripFromStorage removes expired trips and listSavedTrips sorts newest 
   );
 });
 
+test("loadTripFromStorage normalizes legacy saved trips without feedback or updated timestamps", () => {
+  const storage = new MemoryStorage();
+
+  storage.setItem(
+    "vacationplanner:legacy",
+    JSON.stringify({
+      ...basePayload,
+      token: "legacy",
+      createdAt: "2026-07-20T00:00:00.000Z",
+      savedAt: "2026-07-21T00:00:00.000Z",
+    }),
+  );
+
+  const trip = loadTripFromStorage(storage, "legacy");
+
+  assert.ok(trip);
+  assert.equal(trip.createdAt, "2026-07-20T00:00:00.000Z");
+  assert.equal(trip.savedAt, "2026-07-21T00:00:00.000Z");
+  assert.equal(trip.updatedAt, "2026-07-21T00:00:00.000Z");
+  assert.deepEqual(trip.feedback, []);
+});
+
 test("share helpers parse tokens, delete saved trips, and build itinerary text", () => {
   const storage = new MemoryStorage();
   saveTripToStorage(storage, basePayload, "2026-07-28T18:00:00.000Z");
 
   assert.equal(parseTripTokenFromHash("#trip=trip-123"), "trip-123");
+  assert.equal(
+    parseTripTokenFromHash("#view=saved&trip=trip%2Fwith%20space"),
+    "trip/with space",
+  );
   assert.equal(
     buildLocalTripUrl("http://127.0.0.1:3000", "trip-123"),
     "http://127.0.0.1:3000/#trip=trip-123",
