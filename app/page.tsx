@@ -64,6 +64,8 @@ type StatusBanner = {
 type WarningCardContent = {
   title: string;
   message: string;
+  detail?: string;
+  canRetry?: boolean;
 };
 
 export default function Home() {
@@ -978,6 +980,14 @@ export default function Home() {
               <section className="side-card warning-card" aria-live="polite">
                 <h2>{warningCard.title}</h2>
                 <p className="hint">{warningCard.message}</p>
+                {warningCard.detail ? <p className="warning-detail">{warningCard.detail}</p> : null}
+                {warningCard.canRetry ? (
+                  <div className="warning-actions">
+                    <button className="small-btn" type="button" disabled={isLoading} onClick={retryLastRequest}>
+                      Try live AI again
+                    </button>
+                  </div>
+                ) : null}
               </section>
             ) : null}
 
@@ -1262,6 +1272,8 @@ function warningCardForError(error: ApiError): WarningCardContent {
       return {
         title: "Live AI is unavailable",
         message: "This trip was generated in demo mode after a temporary provider issue. Retry to try the live planner again.",
+        detail: "Your current trip stays saved in this browser, so retrying will not clear the itinerary you already have.",
+        canRetry: true,
       };
     case "provider_error":
       return {

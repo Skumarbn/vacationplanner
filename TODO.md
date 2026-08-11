@@ -319,6 +319,8 @@ Verification notes:
 - Manual behavior note: the page now shows skeleton day cards before the first itinerary arrives, keeps prior itinerary content visible during regenerate/swap requests, and exposes a Retry button for recoverable API failures without requiring a refresh.
 - `npm run build`
 - Manual behavior note on August 3, 2026: when the API returns `warning.code = demo_fallback`, the UI now shows `Trip ready in demo mode`, labels the generator as `Demo fallback`, and keeps a visible retry path without affecting 1-day or 2-day trip layouts.
+- `npm run build`
+- Manual behavior note on August 10, 2026 from synced `main`: the sidebar fallback warning now explains that the current browser-saved itinerary stays intact and adds a `Try live AI again` action, so demo fallback recovery remains visible even after the transient form banner expires.
 
 ## 8. Advanced Regeneration Controls
 
@@ -615,6 +617,7 @@ Additional verification notes:
 - Reverified on August 1, 2026 from synced `main`: `npm test` passed with new `/api/itinerary` integration coverage for feedback-aware `swap-activity` requests preserving the trip token while replacing the targeted stop, and `npm run build` passed afterward on Next.js 15.5.19.
 - Reverified on August 3, 2026 from synced `main`: `npm test` passed with updated mocked-provider coverage asserting demo fallback after repeated empty or malformed Responses payloads, and `npm run build` passed afterward on Next.js 15.5.19.
 - Reverified on August 7, 2026 from local `main`: `npm test` passed with new `regenerate-day` fallback coverage asserting token preservation plus untouched-day preservation when the mocked OpenAI transport fails, and `npm run build` passed afterward on Next.js 15.5.19. `git fetch origin` could not complete in this automation environment because outbound GitHub DNS resolution/approval was unavailable, so remote-sync status remains unverified for this run.
+- Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `npm test` and `npm run build` were rerun after adding local-trip helper coverage for legacy saved-trip normalization and encoded `#trip=` hash parsing, and both commands passed on Next.js 15.5.19.
 
 ## 15. Deployment
 
@@ -849,3 +852,4 @@ Dependencies:
 - 2026-08-03: Fetched `origin`; local `main` and `origin/main` both point to `ec8906d`, so no implementation work landed after the July 31 documentation refresh and the top priority remains credentialed OpenAI verification for items 1, 2, and 12.
 - 2026-08-06: Fetched `origin`; local `main` and `origin/main` still match, the scoped frontend items 7, 8, 9, 11, 17, 18, and 19 remain complete, and the current Frontend + UX handoff still blocks new feature work until item 1 gets a credentialed OpenAI verification pass.
 - 2026-08-06: Baseline verification only for the Frontend + UX loop: `npm run build` passed on synced `main`, so no additional user-visible patch was applied in this run.
+- 2026-08-10: Fetched `origin`; local `main` still matches `origin/main`, so this run stayed within the blocked-item-1 handoff and landed only a small demo-fallback UX refinement in item 7 instead of reopening broader frontend scope.

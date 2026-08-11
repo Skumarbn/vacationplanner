@@ -815,6 +815,23 @@ select[aria-invalid="true"] {
   color: #8a4b17;
 }
 
+.warning-detail {
+  margin: 10px 0 0;
+  color: #8a4b17;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.warning-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.warning-actions .small-btn {
+  justify-self: start;
+}
+
 .share-actions {
   display: grid;
   gap: 10px;
@@ -1038,6 +1055,10 @@ select[aria-invalid="true"] {
 
   .side-card {
     padding: 16px;
+  }
+
+  .warning-actions .small-btn {
+    justify-self: stretch;
   }
 
   .share-url {
