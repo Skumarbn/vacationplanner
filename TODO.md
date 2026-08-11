@@ -34,16 +34,16 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 6, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
-- P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed and then re-run `npm test` plus `npm run build`.
-- P2: Keep frontend work limited to UX fallout from verified provider behavior; mobile/export feature work is otherwise already complete for V1.
+- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 11, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed, then re-run `npm test` and `npm run build` on synced `main`.
+- P2: Keep frontend work limited to UX fallout from verified provider behavior. The August 10, 2026 test-only merge did not reopen any completed V1 feature scope.
 - Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
 
 ## Current Agent Handoff
 
-- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for at least San Francisco plus one additional common destination, then patch only the item 2 and item 12 gaps that the credentialed run proves.
-- Frontend + UX: Do not start new V1 feature work while item 1 is blocked. Only respond if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small mobile comfort fixes around demo fallback versus live OpenAI results.
-- Testing + Release: Stand by for the next merged implementation change. When it lands, re-run `npm test` and `npm run build`, then add coverage only for the exact provider/auth/repair behavior confirmed during item 1 verification.
+- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for San Francisco plus at least one additional common destination, and patch only the item 2 and item 12 defects that the credentialed run proves.
+- Frontend + UX: Do not start new V1 feature work while item 1 is blocked. Only respond if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small demo-fallback-versus-live-AI clarity fixes.
+- Testing + Release: Stand by for the next merged implementation change. When it lands, re-run `npm test` and `npm run build` on synced `main`, then add coverage only for the exact provider/auth/repair behavior confirmed during item 1 verification.
 - Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, and reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly.
 
 ## 1. Exact Place Generation With OpenAI
@@ -125,6 +125,7 @@ Progress notes:
 - Current `main` and `origin/main` both include this pipeline work; the remaining gap is real-credential verification plus any follow-up fixes that verification uncovers.
 - Targeted regenerate/swap/remove actions now preserve unrelated days exactly inside the repair pass instead of relying on provider cooperation alone.
 - No additional pipeline defects are evidenced in git history after the August 3 provider-hardening pass; keep item 2 at `Partial` until a credentialed run confirms exact-place quality in live OpenAI mode.
+- Rechecked on August 11, 2026 after fetching `origin`: local `main` and `origin/main` still match at `98f09ab`, and the August 10 merge added test coverage only, so item 2 remains `Partial` solely pending credentialed OpenAI verification.
 
 ## 3. Local Trip Storage
 
@@ -515,6 +516,7 @@ Progress notes:
 - Retryable OpenAI failures now degrade to a structured demo fallback response instead of a hard API failure, so generate/regenerate actions remain usable when the live provider is unavailable.
 - The API now includes an optional `warning` payload with `demo_fallback` plus the fallback reason, while authentication/configuration and invalid-destination errors still stay explicit hard failures.
 - Repeated empty Responses payloads and repeated malformed JSON payloads now also degrade to a structured demo fallback after one repair retry, keeping the provider path usable without exposing raw malformed-response failures to the browser.
+- Rechecked on August 11, 2026 after fetching `origin`: local `main` and `origin/main` still match at `98f09ab`, and no new provider-path code landed after the August 10 test-only merge, so item 12 remains `Partial` only until a real-key OpenAI pass confirms the live-path behavior.
 
 Verification notes:
 
@@ -853,3 +855,5 @@ Dependencies:
 - 2026-08-06: Fetched `origin`; local `main` and `origin/main` still match, the scoped frontend items 7, 8, 9, 11, 17, 18, and 19 remain complete, and the current Frontend + UX handoff still blocks new feature work until item 1 gets a credentialed OpenAI verification pass.
 - 2026-08-06: Baseline verification only for the Frontend + UX loop: `npm run build` passed on synced `main`, so no additional user-visible patch was applied in this run.
 - 2026-08-10: Fetched `origin`; local `main` still matches `origin/main`, so this run stayed within the blocked-item-1 handoff and landed only a small demo-fallback UX refinement in item 7 instead of reopening broader frontend scope.
+- 2026-08-11: Fetched `origin`; local `main` and `origin/main` both point to `98f09ab`, so the latest merged work is the August 10 test-only coverage update for legacy local-trip helpers rather than a new product requirement or roadmap change.
+- 2026-08-11: Product priority is unchanged: item 1 remains the only open V1 blocker, items 2 and 12 stay `Partial` pending credentialed OpenAI evidence, and all other active agents should hold scope unless that verification produces a concrete follow-up.
