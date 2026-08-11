@@ -82,10 +82,12 @@ Progress notes:
 - Rechecked on July 28, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so the real-provider acceptance pass remains blocked even though local demo and mocked-provider checks are green.
 - Rechecked on August 3, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so item 1 remains blocked pending a real-provider acceptance run.
 - Rechecked on August 6, 2026: `OPENAI_API_KEY` is still unset in this automation environment after fetching synced `origin/main`, so item 1 remains the only open V1 blocker.
+- Rechecked on August 10, 2026 after fetching `origin/main`: `OPENAI_API_KEY` is still unset in this automation environment, so the required live OpenAI acceptance pass for San Francisco plus one additional destination is still blocked. No new backend code changes are justified until that credentialed run can happen.
 
 Verification notes:
 
 - Reverified on August 6, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+- Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed all 37 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -516,7 +518,7 @@ Progress notes:
 - Retryable OpenAI failures now degrade to a structured demo fallback response instead of a hard API failure, so generate/regenerate actions remain usable when the live provider is unavailable.
 - The API now includes an optional `warning` payload with `demo_fallback` plus the fallback reason, while authentication/configuration and invalid-destination errors still stay explicit hard failures.
 - Repeated empty Responses payloads and repeated malformed JSON payloads now also degrade to a structured demo fallback after one repair retry, keeping the provider path usable without exposing raw malformed-response failures to the browser.
-- Rechecked on August 11, 2026 after fetching `origin`: local `main` and `origin/main` still match at `98f09ab`, and no new provider-path code landed after the August 10 test-only merge, so item 12 remains `Partial` only until a real-key OpenAI pass confirms the live-path behavior.
+- Rechecked on August 10, 2026 after fetching `origin/main`: local `main` and `origin/main` matched at `91ea125`, `npm test` passed with provider fallback coverage intact, and `npm run build` passed. Item 12 remains `Partial` only because the live OpenAI path still cannot be verified without a real key in this automation environment.
 
 Verification notes:
 
@@ -525,6 +527,7 @@ Verification notes:
 - Reverified on July 28, 2026 with mocked-provider coverage in `tests/routes.test.ts`: authentication errors stay sanitized, vague or unsupported destination errors return `invalid_destination`, and transport failures return a safe `provider_error` message without exposing raw provider details.
 - Reverified on August 1, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport and `429` provider failures now return `200` demo itineraries with `warning.code = demo_fallback`, while `401` configuration errors and invalid destinations still return structured hard errors.
 - Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty or malformed Responses payloads now retry once and then return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`; `npm run build` also passed after rebuilding from a fresh `.next` cache.
+- Reverified on August 10, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport failures, OpenAI `429` responses, empty payload retries, malformed JSON retries, authentication sanitization, and invalid-destination classification still pass under `npm test`; `npm run build` also passed from synced `main`.
 
 ## 13. Environment And Config
 
