@@ -142,6 +142,23 @@ test("loadTripFromStorage removes expired trips and listSavedTrips sorts newest 
   );
 });
 
+test("loadTripFromStorage and listSavedTrips ignore corrupted saved-trip JSON", () => {
+  const storage = new MemoryStorage();
+
+  saveTripToStorage(storage, basePayload, "2026-07-28T18:00:00.000Z");
+  storage.setItem("vacationplanner:broken", "{not-json");
+
+  const brokenTrip = loadTripFromStorage(storage, "broken");
+  const trips = listSavedTrips(storage, new Date("2026-07-28T19:00:00.000Z"));
+
+  assert.equal(brokenTrip, null);
+  assert.equal(storage.getItem("vacationplanner:broken"), null);
+  assert.deepEqual(
+    trips.map((trip) => trip.token),
+    ["trip-123"],
+  );
+});
+
 test("loadTripFromStorage normalizes legacy saved trips without feedback or updated timestamps", () => {
   const storage = new MemoryStorage();
 

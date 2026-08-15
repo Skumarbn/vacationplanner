@@ -628,6 +628,7 @@ Additional verification notes:
 - Reverified on August 3, 2026 from synced `main`: `npm test` passed with updated mocked-provider coverage asserting demo fallback after repeated empty or malformed Responses payloads, and `npm run build` passed afterward on Next.js 15.5.19.
 - Reverified on August 7, 2026 from local `main`: `npm test` passed with new `regenerate-day` fallback coverage asserting token preservation plus untouched-day preservation when the mocked OpenAI transport fails, and `npm run build` passed afterward on Next.js 15.5.19. `git fetch origin` could not complete in this automation environment because outbound GitHub DNS resolution/approval was unavailable, so remote-sync status remains unverified for this run.
 - Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `npm test` and `npm run build` were rerun after adding local-trip helper coverage for legacy saved-trip normalization and encoded `#trip=` hash parsing, and both commands passed on Next.js 15.5.19.
+- Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, added corrupted-localStorage coverage so invalid saved-trip JSON is removed instead of breaking `#trip=` reloads or the saved-trips sidebar, and reran `npm test` plus `npm run build`.
 
 ## 15. Deployment
 

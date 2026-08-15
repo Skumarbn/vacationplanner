@@ -31,8 +31,7 @@ export function saveTripToStorage(
   now = new Date().toISOString(),
 ) {
   const storageKey = getTripStorageKey(payload.token);
-  const previousTrip = storage.getItem(storageKey);
-  const previousPayload = previousTrip ? (JSON.parse(previousTrip) as SavedTrip) : null;
+  const previousPayload = readSavedTrip(storage, payload.token);
   const createdAt = previousPayload?.createdAt || previousPayload?.savedAt || now;
 
   const savedTrip: SavedTrip = {
@@ -49,10 +48,9 @@ export function saveTripToStorage(
 }
 
 export function loadTripFromStorage(storage: StorageLike, token: string, now = new Date()) {
-  const saved = storage.getItem(getTripStorageKey(token));
-  if (!saved) return null;
+  const parsed = readSavedTrip(storage, token);
+  if (!parsed) return null;
 
-  const parsed = normalizeSavedTrip(JSON.parse(saved) as Partial<SavedTrip>);
   if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() <= now.getTime()) {
     storage.removeItem(getTripStorageKey(token));
     return null;
@@ -169,6 +167,19 @@ function normalizeSavedTrip(savedTrip: Partial<SavedTrip>) {
 
 function getSavedTripSortKey(savedTrip: SavedTrip) {
   return savedTrip.updatedAt || savedTrip.savedAt || savedTrip.createdAt || "";
+}
+
+function readSavedTrip(storage: StorageLike, token: string) {
+  const storageKey = getTripStorageKey(token);
+  const saved = storage.getItem(storageKey);
+  if (!saved) return null;
+
+  try {
+    return normalizeSavedTrip(JSON.parse(saved) as Partial<SavedTrip>);
+  } catch {
+    storage.removeItem(storageKey);
+    return null;
+  }
 }
 
 function buildCalendarEvent({
