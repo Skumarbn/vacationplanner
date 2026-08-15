@@ -129,7 +129,14 @@ Progress notes:
 - Current `main` and `origin/main` both include this pipeline work; the remaining gap is real-credential verification plus any follow-up fixes that verification uncovers.
 - Targeted regenerate/swap/remove actions now preserve unrelated days exactly inside the repair pass instead of relying on provider cooperation alone.
 - No additional pipeline defects are evidenced in git history after the August 3 provider-hardening pass; keep item 2 at `Partial` until a credentialed run confirms exact-place quality in live OpenAI mode.
-- Rechecked on August 15, 2026 after fetching `origin`: local `main` and `origin/main` still match at `f3c0207`, and no implementation merges have landed since the August 10 docs refresh, so item 2 remains `Partial` solely pending credentialed OpenAI verification.
+- Hardened the provider inspection and repair path so generic or duplicate `mapQuery` values now trigger a repair retry and normalize to exact title-plus-destination Google Maps queries before returning the itinerary.
+- Rechecked on August 15, 2026 from local `main`: local `HEAD` still matches the existing `origin/main` tracking ref at `f37df4a`, `git fetch origin` was blocked by automation approval timeout, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
+
+Verification notes:
+
+- `npm test`
+- `npm run build`
+- Reverified on August 15, 2026 from local `main`: `npm test` passed all 40 tests after adding mocked-provider coverage for generic `mapQuery` retries plus repair-time dedupe/normalization, and `npm run build` passed on Next.js 15.5.19.
 
 ## 3. Local Trip Storage
 

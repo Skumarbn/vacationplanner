@@ -583,9 +583,12 @@ function inspectItinerary(itinerary: Itinerary, input: TripInput) {
   }
 
   const seenTitles = new Set<string>();
+  const seenMapQueries = new Set<string>();
   for (const day of itinerary.days || []) {
     for (const activity of day.activities || []) {
       const normalizedTitle = String(activity.title || "").trim().toLowerCase();
+      const mapQuery = String(activity.mapQuery || "").trim();
+      const normalizedMapQuery = normalizeSearchKey(mapQuery);
       if (!normalizedTitle) {
         issues.push("Every activity needs a non-empty title.");
         continue;
@@ -609,9 +612,14 @@ function inspectItinerary(itinerary: Itinerary, input: TripInput) {
       if (!Array.isArray(activity.tags) || activity.tags.length === 0) {
         issues.push(`Add tags for "${activity.title}".`);
       }
-      if (!String(activity.mapQuery || "").trim()) {
+      if (!mapQuery) {
         issues.push(`Add a mapQuery for "${activity.title}".`);
+      } else if (isGenericMapQuery(mapQuery, String(activity.title || ""), input.destination)) {
+        issues.push(`Make mapQuery for "${activity.title}" specific enough for Google Maps.`);
+      } else if (seenMapQueries.has(normalizedMapQuery)) {
+        issues.push(`Avoid duplicate mapQuery values like "${activity.mapQuery}".`);
       }
+      seenMapQueries.add(normalizedMapQuery);
     }
   }
 
@@ -715,10 +723,14 @@ function repairItinerary(
   }
 
   const seenTitles = new Set<string>();
+  const seenMapQueries = new Set<string>();
   repaired.days = repaired.days.map((day, dayIndex) => {
     if (shouldPreserveExistingDay(existingItinerary, action, target, dayIndex)) {
       const preservedDay = existingItinerary!.days[dayIndex];
-      preservedDay.activities.forEach((activity) => seenTitles.add(activity.title.toLowerCase()));
+      preservedDay.activities.forEach((activity) => {
+        seenTitles.add(activity.title.toLowerCase());
+        seenMapQueries.add(normalizeSearchKey(activity.mapQuery));
+      });
       return structuredClone(preservedDay);
     }
 
@@ -728,7 +740,7 @@ function repairItinerary(
     const normalizedActivities = seedActivities
       .slice(0, maxActivities)
       .map((activity, activityIndex) =>
-        repairActivity(activity, input, dayIndex, activityIndex, seenTitles),
+        repairActivity(activity, input, dayIndex, activityIndex, seenTitles, seenMapQueries),
       );
 
     while (normalizedActivities.length < minActivities) {
@@ -739,6 +751,7 @@ function repairItinerary(
           dayIndex,
           normalizedActivities.length,
           seenTitles,
+          seenMapQueries,
         ),
       );
     }
@@ -823,8 +836,10 @@ function repairActivity(
   dayIndex: number,
   activityIndex: number,
   seenTitles: Set<string>,
+  seenMapQueries: Set<string>,
 ): Activity {
   const fallback = createFallbackActivity(input, dayIndex, activityIndex, Date.now() + activityIndex);
+  const fallbackMapQuery = `${fallback.title} ${input.destination}`;
   let candidate = enrichActivity(
     {
       ...fallback,
@@ -836,7 +851,11 @@ function repairActivity(
       tags: Array.isArray(activity.tags)
         ? activity.tags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 4)
         : fallback.tags,
-      mapQuery: String(activity.mapQuery || "").trim() || `${String(activity.title || fallback.title).trim()} ${input.destination}`,
+      mapQuery: normalizeMapQuery(
+        String(activity.mapQuery || "").trim(),
+        String(activity.title || fallback.title).trim(),
+        input.destination,
+      ),
       neighborhood: String(activity.neighborhood || "").trim() || fallback.neighborhood,
       bookingHint: String(activity.bookingHint || "").trim() || fallback.bookingHint,
       setting: normalizeSetting(activity.setting, fallback.setting),
@@ -849,13 +868,32 @@ function repairActivity(
     candidate = enrichActivity(
       {
         ...fallback,
-        mapQuery: `${fallback.title} ${input.destination}`,
+        mapQuery: fallbackMapQuery,
+      },
+      input,
+    );
+  }
+
+  const normalizedMapQuery = normalizeSearchKey(candidate.mapQuery);
+  if (
+    isGenericMapQuery(candidate.mapQuery, candidate.title, input.destination) ||
+    seenMapQueries.has(normalizedMapQuery)
+  ) {
+    candidate = enrichActivity(
+      {
+        ...candidate,
+        mapQuery:
+          !isGenericTitle(candidate.title.toLowerCase()) &&
+          !seenMapQueries.has(normalizeSearchKey(`${candidate.title} ${input.destination}`))
+            ? `${candidate.title} ${input.destination}`
+            : fallbackMapQuery,
       },
       input,
     );
   }
 
   seenTitles.add(candidate.title.toLowerCase());
+  seenMapQueries.add(normalizeSearchKey(candidate.mapQuery));
   return candidate;
 }
 
@@ -908,7 +946,7 @@ function enrichActivity(activity: Activity, input: TripInput): Activity {
     duration: activity.duration.trim(),
     cost: normalizeCost(activity.cost, "$$"),
     tags,
-    mapQuery: activity.mapQuery.trim() || `${activity.title} ${input.destination}`,
+    mapQuery: normalizeMapQuery(activity.mapQuery, activity.title, input.destination),
     neighborhood: activity.neighborhood?.trim() || inferNeighborhood(activity.title, input.destination),
     bookingHint:
       activity.bookingHint?.trim() ||
@@ -1626,6 +1664,108 @@ function getPlaceSet(destination: string): PlaceSet {
 function isGenericTitle(title: string) {
   return genericTitlePatterns.some((pattern) => pattern.test(title));
 }
+
+function normalizeMapQuery(mapQuery: string, title: string, destination: string) {
+  const trimmedQuery = String(mapQuery || "").trim();
+  const trimmedTitle = String(title || "").trim();
+  const trimmedDestination = String(destination || "").trim();
+
+  if (!trimmedQuery) {
+    return `${trimmedTitle} ${trimmedDestination}`.trim();
+  }
+
+  if (normalizeSearchKey(trimmedQuery) === normalizeSearchKey(trimmedTitle)) {
+    return `${trimmedTitle} ${trimmedDestination}`.trim();
+  }
+
+  return trimmedQuery;
+}
+
+function isGenericMapQuery(mapQuery: string, title: string, destination: string) {
+  const normalizedQuery = normalizeSearchKey(mapQuery);
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  if (normalizedQuery === normalizeSearchKey(destination)) {
+    return true;
+  }
+
+  if (normalizedQuery === normalizeSearchKey(title) && !isGenericTitle(normalizedQuery)) {
+    return false;
+  }
+
+  if (isGenericTitle(normalizedQuery)) {
+    return true;
+  }
+
+  const destinationTokens = new Set(normalizeSearchKey(destination).split(" ").filter(Boolean));
+  const remainingTokens = normalizedQuery
+    .split(" ")
+    .filter(Boolean)
+    .filter((token) => !destinationTokens.has(token));
+
+  if (remainingTokens.length === 0) {
+    return true;
+  }
+
+  return remainingTokens.every((token) => genericMapQueryTokens.has(token));
+}
+
+function normalizeSearchKey(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+const genericMapQueryTokens = new Set([
+  "area",
+  "attraction",
+  "bakery",
+  "bar",
+  "beach",
+  "breakfast",
+  "brunch",
+  "cafe",
+  "center",
+  "centre",
+  "central",
+  "coffee",
+  "deli",
+  "dessert",
+  "dinner",
+  "district",
+  "downtown",
+  "food",
+  "garden",
+  "gardens",
+  "hall",
+  "historic",
+  "history",
+  "landmark",
+  "lunch",
+  "market",
+  "meal",
+  "museum",
+  "neighborhood",
+  "neighbourhood",
+  "park",
+  "restaurant",
+  "riverfront",
+  "scenic",
+  "shopping",
+  "signature",
+  "sightseeing",
+  "stop",
+  "sunset",
+  "tour",
+  "view",
+  "viewpoint",
+  "walk",
+  "waterfront",
+]);
 
 function toLabel(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);

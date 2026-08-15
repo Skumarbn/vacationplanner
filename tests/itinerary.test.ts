@@ -276,3 +276,84 @@ test("generateItinerary repairs provider output with meal balance and nearby clu
   const neighborhoods = new Set(activities.map((activity) => activity.neighborhood));
   assert.ok(neighborhoods.size <= 2);
 });
+
+test("generateItinerary repairs generic and duplicate provider mapQuery values", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+  let callCount = 0;
+
+  global.fetch = async () => {
+    callCount += 1;
+
+    return new Response(
+      JSON.stringify({
+        output_text: JSON.stringify({
+          title: "San Francisco family trip",
+          summary: {
+            pace: "Balanced",
+            budget: "Moderate",
+            bestFor: "Families",
+            activityCount: 2,
+          },
+          destination: "San Francisco",
+          notes: ["Verify hours, tickets, and travel times before going."],
+          days: [
+            {
+              title: "Day 1",
+              meta: "Provider sent weak search queries",
+              activities: [
+                {
+                  time: "9:00 AM",
+                  title: "California Academy of Sciences",
+                  description: "Museum start in the park.",
+                  duration: "2 hours",
+                  cost: "$$",
+                  tags: ["Museums", "Indoor"],
+                  mapQuery: "San Francisco museum",
+                  neighborhood: "Golden Gate Park",
+                  bookingHint: "Book ahead.",
+                  setting: "Indoor",
+                  familyFriendly: "High",
+                },
+                {
+                  time: "1:00 PM",
+                  title: "de Young Museum",
+                  description: "Art museum near the first stop.",
+                  duration: "2 hours",
+                  cost: "$$",
+                  tags: ["Museums", "Culture"],
+                  mapQuery: "San Francisco museum",
+                  neighborhood: "Golden Gate Park",
+                  bookingHint: "Reserve if a special exhibit matters.",
+                  setting: "Indoor",
+                  familyFriendly: "Medium",
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const result = await generateItinerary({
+    input: { ...baseInput, days: 1, pace: "Balanced", children: 0 },
+    action: "generate",
+    existingItinerary: null,
+    target: {},
+  });
+
+  assert.equal(callCount, 2);
+  const [first, second] = result.itinerary.days[0].activities;
+  assert.equal(first.mapQuery, "California Academy of Sciences San Francisco, CA");
+  assert.equal(second.mapQuery, "de Young Museum San Francisco, CA");
+  assert.notEqual(first.mapQuery, second.mapQuery);
+});

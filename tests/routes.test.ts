@@ -403,6 +403,147 @@ test("POST /api/itinerary retries mocked provider output when the first response
   assert.equal(body.itinerary.days[0].activities[0].title, "California Academy of Sciences");
 });
 
+test("POST /api/itinerary retries mocked provider output when mapQuery values are too generic", async (t) => {
+  const originalFetch = global.fetch;
+  process.env.OPENAI_API_KEY = "test-key";
+  let callCount = 0;
+
+  global.fetch = async () => {
+    callCount += 1;
+
+    const outputText =
+      callCount === 1
+        ? JSON.stringify({
+            title: "San Francisco family trip",
+            summary: {
+              pace: "Balanced",
+              budget: "Moderate",
+              bestFor: "Families",
+              activityCount: 2,
+            },
+            destination: "San Francisco",
+            notes: ["Verify hours, tickets, and travel times before going."],
+            days: [
+              {
+                title: "Day 1",
+                meta: "Weak map queries",
+                activities: [
+                  {
+                    time: "9:00 AM",
+                    title: "California Academy of Sciences",
+                    description: "Start with the rainforest dome and aquarium exhibits.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Museums", "Kid-friendly"],
+                    mapQuery: "San Francisco museum",
+                    neighborhood: "Golden Gate Park",
+                    bookingHint: "Reserve timed entry if possible.",
+                    setting: "Indoor",
+                    familyFriendly: "High",
+                  },
+                  {
+                    time: "1:00 PM",
+                    title: "Ferry Building Marketplace",
+                    description: "Lunch with easy browsing along the Embarcadero.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Food", "Markets"],
+                    mapQuery: "San Francisco market",
+                    neighborhood: "Embarcadero",
+                    bookingHint: "Go early for shorter lines.",
+                    setting: "Mixed",
+                    familyFriendly: "High",
+                  },
+                ],
+              },
+            ],
+          })
+        : JSON.stringify({
+            title: "San Francisco family trip",
+            summary: {
+              pace: "Balanced",
+              budget: "Moderate",
+              bestFor: "Families",
+              activityCount: 2,
+            },
+            destination: "San Francisco",
+            notes: ["Verify hours, tickets, and travel times before going."],
+            days: [
+              {
+                title: "Day 1",
+                meta: "Family-aware pacing",
+                activities: [
+                  {
+                    time: "9:00 AM",
+                    title: "California Academy of Sciences",
+                    description: "Start with the rainforest dome and aquarium exhibits.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Museums", "Kid-friendly"],
+                    mapQuery: "California Academy of Sciences San Francisco, CA",
+                    neighborhood: "Golden Gate Park",
+                    bookingHint: "Reserve timed entry if possible.",
+                    setting: "Indoor",
+                    familyFriendly: "High",
+                  },
+                  {
+                    time: "1:00 PM",
+                    title: "Ferry Building Marketplace",
+                    description: "Lunch with easy browsing along the Embarcadero.",
+                    duration: "2 hours",
+                    cost: "$$",
+                    tags: ["Food", "Markets"],
+                    mapQuery: "Ferry Building Marketplace San Francisco, CA",
+                    neighborhood: "Embarcadero",
+                    bookingHint: "Go early for shorter lines.",
+                    setting: "Mixed",
+                    familyFriendly: "High",
+                  },
+                ],
+              },
+            ],
+          });
+
+    return new Response(JSON.stringify({ output_text: outputText }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  t.after(() => {
+    global.fetch = originalFetch;
+  });
+
+  const response = await postItinerary(
+    buildRequest({
+      action: "generate",
+      tripInput: {
+        destination: "San Francisco, CA",
+        startDate: "2026-08-12",
+        days: 1,
+        adults: 2,
+        children: 1,
+        budget: "Moderate",
+        pace: "Balanced",
+        interests: ["Food", "Museums", "Kid-friendly"],
+      },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(callCount, 2);
+
+  const body = (await response.json()) as {
+    itinerary: { days: Array<{ activities: Array<{ mapQuery: string }> }> };
+    generatedBy: string;
+  };
+  assert.equal(body.generatedBy, "openai");
+  assert.equal(
+    body.itinerary.days[0].activities[0].mapQuery,
+    "California Academy of Sciences San Francisco, CA",
+  );
+});
+
 test("POST /api/itinerary falls back to demo mode after repeated empty mocked provider responses", async (t) => {
   const originalFetch = global.fetch;
   process.env.OPENAI_API_KEY = "test-key";
