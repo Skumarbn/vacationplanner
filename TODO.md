@@ -326,6 +326,8 @@ Verification notes:
 - Manual behavior note on August 3, 2026: when the API returns `warning.code = demo_fallback`, the UI now shows `Trip ready in demo mode`, labels the generator as `Demo fallback`, and keeps a visible retry path without affecting 1-day or 2-day trip layouts.
 - `npm run build`
 - Manual behavior note on August 10, 2026 from synced `main`: the sidebar fallback warning now explains that the current browser-saved itinerary stays intact and adds a `Try live AI again` action, so demo fallback recovery remains visible even after the transient form banner expires.
+- `npm run build`
+- Manual behavior note on August 15, 2026 from synced `main`: demo fallback copy now explains that a successful live retry updates the same browser-saved trip, highlights export options for preserving the current draft first, and labels the retry action as `Retry live AI` in both the form banner and sidebar warning card.
 
 ## 8. Advanced Regeneration Controls
 

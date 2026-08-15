@@ -59,13 +59,16 @@ type StatusBanner = {
   message: string;
   details?: string[];
   canRetry?: boolean;
+  retryLabel?: string;
 };
 
 type WarningCardContent = {
   title: string;
   message: string;
   detail?: string;
+  followUp?: string;
   canRetry?: boolean;
+  retryLabel?: string;
 };
 
 export default function Home() {
@@ -981,10 +984,11 @@ export default function Home() {
                 <h2>{warningCard.title}</h2>
                 <p className="hint">{warningCard.message}</p>
                 {warningCard.detail ? <p className="warning-detail">{warningCard.detail}</p> : null}
+                {warningCard.followUp ? <p className="warning-follow-up">{warningCard.followUp}</p> : null}
                 {warningCard.canRetry ? (
                   <div className="warning-actions">
                     <button className="small-btn" type="button" disabled={isLoading} onClick={retryLastRequest}>
-                      Try live AI again
+                      {warningCard.retryLabel || "Retry"}
                     </button>
                   </div>
                 ) : null}
@@ -1099,7 +1103,7 @@ function StatusCard({
       </div>
       {banner.canRetry && onRetry ? (
         <button className="small-btn" type="button" disabled={isLoading} onClick={onRetry}>
-          Retry
+          {banner.retryLabel || "Retry"}
         </button>
       ) : null}
     </div>
@@ -1244,9 +1248,13 @@ function successBannerForPayload(payload: ItineraryResponse): StatusBanner {
   if (payload.warning) {
     return {
       tone: "info",
-      title: payload.warning.code === "demo_fallback" ? "Trip ready in demo mode" : "Trip ready with a warning",
-      message: warningCardForError(payload.warning).message,
+      title: payload.warning.code === "demo_fallback" ? "Trip saved in demo mode" : "Trip ready with a warning",
+      message:
+        payload.warning.code === "demo_fallback"
+          ? "The current draft is usable now. Retry live AI later if you want a refreshed version."
+          : warningCardForError(payload.warning).message,
       canRetry: payload.warning.code === "demo_fallback",
+      retryLabel: payload.warning.code === "demo_fallback" ? "Retry live AI" : undefined,
     };
   }
 
@@ -1271,9 +1279,12 @@ function warningCardForError(error: ApiError): WarningCardContent {
     case "demo_fallback":
       return {
         title: "Live AI is unavailable",
-        message: "This trip was generated in demo mode after a temporary provider issue. Retry to try the live planner again.",
-        detail: "Your current trip stays saved in this browser, so retrying will not clear the itinerary you already have.",
+        message: "This trip was generated in demo mode after a temporary provider issue, so you can keep planning without losing the current draft.",
+        detail:
+          "If a later live retry succeeds, it updates this same browser-saved trip instead of creating a second copy automatically.",
+        followUp: "Use Copy itinerary text, Print / save PDF, or the calendar export first if you want to preserve this exact version.",
         canRetry: true,
+        retryLabel: "Retry live AI",
       };
     case "provider_error":
       return {
@@ -1307,6 +1318,7 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
           message: "Try a specific city, region, or country so the planner can anchor the trip.",
           details,
           canRetry: true,
+          retryLabel: "Retry request",
         };
       case "rate_limited":
         return {
@@ -1314,6 +1326,7 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
           title: "Planner is temporarily busy",
           message: "Wait a moment, then retry the same request.",
           canRetry: true,
+          retryLabel: "Retry request",
         };
       case "provider_error":
         return {
@@ -1321,6 +1334,7 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
           title: "AI planner is unavailable",
           message: "The trip service had a temporary issue. Retry the request without refreshing.",
           canRetry: true,
+          retryLabel: "Retry request",
         };
       case "malformed_response":
         return {
@@ -1328,13 +1342,15 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
           title: "Returned trip was unusable",
           message: "The planner produced an incomplete response. Retry to generate a cleaner draft.",
           canRetry: true,
+          retryLabel: "Retry request",
         };
       case "demo_fallback":
         return {
-          tone: "error",
-          title: "Switched to demo mode",
-          message: error.error,
+          tone: "info",
+          title: "Trip saved in demo mode",
+          message: "The live provider was unavailable, so the planner kept this request usable with a demo draft.",
           canRetry: true,
+          retryLabel: "Retry live AI",
         };
       default:
         return {
@@ -1343,6 +1359,7 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
           message: error.error,
           details,
           canRetry: true,
+          retryLabel: "Retry request",
         };
     }
   }
@@ -1352,6 +1369,7 @@ function buildErrorBanner(error: unknown, request: PendingRequest): StatusBanner
     title: actionFailureTitle(request.action),
     message: error instanceof Error ? error.message : "Something went wrong while updating the trip.",
     canRetry: true,
+    retryLabel: "Retry request",
   };
 }
 

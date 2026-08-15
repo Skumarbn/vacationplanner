@@ -822,6 +822,16 @@ select[aria-invalid="true"] {
   line-height: 1.5;
 }
 
+.warning-follow-up {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  color: #8a4b17;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .warning-actions {
   display: grid;
   gap: 10px;
