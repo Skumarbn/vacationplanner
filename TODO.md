@@ -34,7 +34,7 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 14, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 15, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
 - P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed, then re-run `npm test` and `npm run build` on synced `main`.
 - P2: Keep frontend work limited to UX fallout from verified provider behavior. No feature merges have landed since the August 10, 2026 docs refresh, so completed V1 scope stays closed.
 - Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
@@ -83,13 +83,13 @@ Progress notes:
 - Rechecked on August 3, 2026: `OPENAI_API_KEY` is still unset in this automation environment, so item 1 remains blocked pending a real-provider acceptance run.
 - Rechecked on August 6, 2026: `OPENAI_API_KEY` is still unset in this automation environment after fetching synced `origin/main`, so item 1 remains the only open V1 blocker.
 - Rechecked on August 10, 2026 after fetching `origin/main`: `OPENAI_API_KEY` is still unset in this automation environment, so the required live OpenAI acceptance pass for San Francisco plus one additional destination is still blocked. No new backend code changes are justified until that credentialed run can happen.
-- Rechecked on August 14, 2026 after fetching `origin`: `OPENAI_API_KEY` is still unset in this automation environment, and local `main` still matches `origin/main` at `f3c0207`, so the required live OpenAI acceptance pass for San Francisco plus one additional destination remains blocked.
+- Rechecked on August 15, 2026 after fetching `origin`: `OPENAI_API_KEY` is still unset in this automation environment, and local `main` still matches `origin/main` at `f3c0207`, so the required live OpenAI acceptance pass for San Francisco plus one additional destination remains blocked.
 
 Verification notes:
 
 - Reverified on August 6, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed all 37 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
-- Reverified on August 14, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `f3c0207`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+- Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `f3c0207`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -129,7 +129,7 @@ Progress notes:
 - Current `main` and `origin/main` both include this pipeline work; the remaining gap is real-credential verification plus any follow-up fixes that verification uncovers.
 - Targeted regenerate/swap/remove actions now preserve unrelated days exactly inside the repair pass instead of relying on provider cooperation alone.
 - No additional pipeline defects are evidenced in git history after the August 3 provider-hardening pass; keep item 2 at `Partial` until a credentialed run confirms exact-place quality in live OpenAI mode.
-- Rechecked on August 14, 2026 after fetching `origin`: local `main` and `origin/main` still match at `f3c0207`, and no implementation merges have landed since the August 10 docs refresh, so item 2 remains `Partial` solely pending credentialed OpenAI verification.
+- Rechecked on August 15, 2026 after fetching `origin`: local `main` and `origin/main` still match at `f3c0207`, and no implementation merges have landed since the August 10 docs refresh, so item 2 remains `Partial` solely pending credentialed OpenAI verification.
 
 ## 3. Local Trip Storage
 
@@ -523,7 +523,7 @@ Progress notes:
 - The API now includes an optional `warning` payload with `demo_fallback` plus the fallback reason, while authentication/configuration and invalid-destination errors still stay explicit hard failures.
 - Repeated empty Responses payloads and repeated malformed JSON payloads now also degrade to a structured demo fallback after one repair retry, keeping the provider path usable without exposing raw malformed-response failures to the browser.
 - Rechecked on August 10, 2026 after fetching `origin/main`: local `main` and `origin/main` matched at `91ea125`, `npm test` passed with provider fallback coverage intact, and `npm run build` passed. Item 12 remains `Partial` only because the live OpenAI path still cannot be verified without a real key in this automation environment.
-- Rechecked on August 14, 2026 after fetching `origin`: local `main` and `origin/main` matched at `f3c0207`, `OPENAI_API_KEY` remained unset in this automation environment, and no new implementation evidence changed the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
+- Rechecked on August 15, 2026 after fetching `origin`: local `main` and `origin/main` matched at `f3c0207`, `OPENAI_API_KEY` remained unset in this automation environment, and no new implementation evidence changed the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
 
 Verification notes:
 
