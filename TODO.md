@@ -84,12 +84,14 @@ Progress notes:
 - Rechecked on August 6, 2026: `OPENAI_API_KEY` is still unset in this automation environment after fetching synced `origin/main`, so item 1 remains the only open V1 blocker.
 - Rechecked on August 10, 2026 after fetching `origin/main`: `OPENAI_API_KEY` is still unset in this automation environment, so the required live OpenAI acceptance pass for San Francisco plus one additional destination is still blocked. No new backend code changes are justified until that credentialed run can happen.
 - Rechecked on August 15, 2026 after fetching `origin`: `OPENAI_API_KEY` is still unset in this automation environment, and local `main` still matches `origin/main` at `f3c0207`, so the required live OpenAI acceptance pass for San Francisco plus one additional destination remains blocked.
+- Rechecked on August 18, 2026 after fetching `origin`: local `main` still matches `origin/main` at `35a59c08`, `OPENAI_API_KEY` remains unset in this automation environment, and the required live OpenAI acceptance pass for San Francisco plus one additional destination is still blocked with no justified backend code change until credentials are available.
 
 Verification notes:
 
 - Reverified on August 6, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `OPENAI_API_KEY` remained unset, `npm test` passed all 37 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `f3c0207`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+- Reverified on August 18, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `35a59c08`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -131,12 +133,14 @@ Progress notes:
 - No additional pipeline defects are evidenced in git history after the August 3 provider-hardening pass; keep item 2 at `Partial` until a credentialed run confirms exact-place quality in live OpenAI mode.
 - Hardened the provider inspection and repair path so generic or duplicate `mapQuery` values now trigger a repair retry and normalize to exact title-plus-destination Google Maps queries before returning the itinerary.
 - Rechecked on August 15, 2026 from local `main`: local `HEAD` still matches the existing `origin/main` tracking ref at `f37df4a`, `git fetch origin` was blocked by automation approval timeout, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
+- Rechecked on August 18, 2026 from synced `main`: local `HEAD` matches `origin/main` at `35a59c08`, `git fetch origin` succeeded, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
 
 Verification notes:
 
 - `npm test`
 - `npm run build`
 - Reverified on August 15, 2026 from local `main`: `npm test` passed all 40 tests after adding mocked-provider coverage for generic `mapQuery` retries plus repair-time dedupe/normalization, and `npm run build` passed on Next.js 15.5.19.
+- Reverified on August 18, 2026 from synced `main`: `npm test` passed and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
 
 ## 3. Local Trip Storage
 
@@ -531,6 +535,7 @@ Progress notes:
 - Repeated empty Responses payloads and repeated malformed JSON payloads now also degrade to a structured demo fallback after one repair retry, keeping the provider path usable without exposing raw malformed-response failures to the browser.
 - Rechecked on August 10, 2026 after fetching `origin/main`: local `main` and `origin/main` matched at `91ea125`, `npm test` passed with provider fallback coverage intact, and `npm run build` passed. Item 12 remains `Partial` only because the live OpenAI path still cannot be verified without a real key in this automation environment.
 - Rechecked on August 15, 2026 after fetching `origin`: local `main` and `origin/main` matched at `f3c0207`, `OPENAI_API_KEY` remained unset in this automation environment, and no new implementation evidence changed the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
+- Rechecked on August 18, 2026 after fetching `origin`: local `main` and `origin/main` matched at `35a59c08`, `OPENAI_API_KEY` remained unset in this automation environment, and no new implementation evidence changed the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
 
 Verification notes:
 
@@ -540,6 +545,7 @@ Verification notes:
 - Reverified on August 1, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport and `429` provider failures now return `200` demo itineraries with `warning.code = demo_fallback`, while `401` configuration errors and invalid destinations still return structured hard errors.
 - Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty or malformed Responses payloads now retry once and then return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`; `npm run build` also passed after rebuilding from a fresh `.next` cache.
 - Reverified on August 10, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport failures, OpenAI `429` responses, empty payload retries, malformed JSON retries, authentication sanitization, and invalid-destination classification still pass under `npm test`; `npm run build` also passed from synced `main`.
+- Reverified on August 18, 2026 from synced `main`: `npm test` and `npm run build` both passed again, but live OpenAI failure-mode acceptance still cannot be closed without a real `OPENAI_API_KEY` in this automation environment.
 
 ## 13. Environment And Config
 
