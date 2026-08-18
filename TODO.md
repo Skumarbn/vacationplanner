@@ -328,12 +328,14 @@ Progress notes:
 - Replaced transient status text with action-specific loading banners and persistent retryable error cards for provider, rate-limit, malformed-response, and validation failures.
 - Existing itinerary cards now dim during refresh actions so regenerate/swap requests still preserve context for 1-day and 2-day trips.
 - Successful demo-fallback recoveries now surface a client-side warning banner and sidebar note, so provider outages no longer read like a clean OpenAI success.
+- On August 18, 2026, narrowed in-flight states so day-level and activity-level edits mark the affected card directly with warm inline update pills instead of dimming every result equally.
 
 Verification notes:
 
 - `npm run build` passed on July 2, 2026 after adding skeleton states, retry UI, and structured provider error messaging.
 - Manual behavior note: the page now shows skeleton day cards before the first itinerary arrives, keeps prior itinerary content visible during regenerate/swap requests, and exposes a Retry button for recoverable API failures without requiring a refresh.
 - `npm run build`
+- Reverified on August 18, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `35a59c0`, and `npm run build` passed on Next.js 15.5.19 after scoping loading feedback to the active day or stop. Manual behavior note: 1-day and 2-day itineraries now keep non-targeted results readable while showing an inline “Refreshing stops”, “Updating one stop”, or stop-specific repair note on the card being changed.
 - Manual behavior note on August 3, 2026: when the API returns `warning.code = demo_fallback`, the UI now shows `Trip ready in demo mode`, labels the generator as `Demo fallback`, and keeps a visible retry path without affecting 1-day or 2-day trip layouts.
 - `npm run build`
 - Manual behavior note on August 10, 2026 from synced `main`: the sidebar fallback warning now explains that the current browser-saved itinerary stays intact and adds a `Try live AI again` action, so demo fallback recovery remains visible even after the transient form banner expires.

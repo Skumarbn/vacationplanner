@@ -78,6 +78,7 @@ export default function Home() {
   const [statusBanner, setStatusBanner] = useState<StatusBanner | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [activeRequest, setActiveRequest] = useState<PendingRequest | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedItinerary, setCopiedItinerary] = useState(false);
   const [copiedCalendar, setCopiedCalendar] = useState(false);
@@ -92,6 +93,7 @@ export default function Home() {
 
   const itinerary = payload?.itinerary;
   const warningCard = payload?.warning ? warningCardForError(payload.warning) : null;
+  const isTargetedUpdate = Boolean(isLoading && itinerary && activeRequest && activeRequest.action !== "generate");
 
   const shareLink = useMemo(() => {
     if (!payload?.token || typeof window === "undefined") return "Generate a trip first";
@@ -211,6 +213,7 @@ export default function Home() {
     const pendingRequest = { action, target, input: requestInputWithDefaults, replaceTarget };
     lastRequestRef.current = pendingRequest;
     setIsLoading(true);
+    setActiveRequest(pendingRequest);
     showBanner({
       tone: "info",
       title: loadingTitle(action, target),
@@ -254,6 +257,7 @@ export default function Home() {
     } finally {
       if (requestId === activeRequestId.current) {
         setIsLoading(false);
+        setActiveRequest(null);
       }
     }
   }
@@ -767,9 +771,16 @@ export default function Home() {
                 <div className="verify-banner" role="note">
                   Verify hours, tickets, travel times, and availability before you go.
                 </div>
-                {itinerary.days.map((day, dayIndex) => (
-                  <article className={`day-card${isLoading ? " is-updating" : ""}`} key={`${day.title}-${dayIndex}`}>
-                    <header className="day-head">
+                {itinerary.days.map((day, dayIndex) => {
+                  const isDayUpdating = isDayRequestUpdating(activeRequest, isLoading, dayIndex);
+                  const isWholeTripUpdating = Boolean(isLoading && !isTargetedUpdate);
+
+                  return (
+                    <article
+                      className={`day-card${isWholeTripUpdating || isDayUpdating ? " is-updating" : ""}`}
+                      key={`${day.title}-${dayIndex}`}
+                    >
+                      <header className="day-head">
                       <div className="day-heading">
                         <h3>{day.title}</h3>
                         <div className="day-meta">{day.meta}</div>
@@ -777,6 +788,11 @@ export default function Home() {
                           <span className="day-summary-pill">
                             {day.activities.length} stop{day.activities.length === 1 ? "" : "s"}
                           </span>
+                          {isDayUpdating ? (
+                            <span className="day-status-pill" aria-live="polite">
+                              {dayUpdateLabel(activeRequest)}
+                            </span>
+                          ) : null}
                           <button
                             className="day-toggle"
                             type="button"
@@ -821,13 +837,17 @@ export default function Home() {
                           Regenerate day
                         </button>
                       </div>
-                    </header>
-                    {expandedDays.includes(dayIndex) ? (
-                      day.activities.map((activity, activityIndex) => {
+                      </header>
+                      {expandedDays.includes(dayIndex) ? (
+                        day.activities.map((activity, activityIndex) => {
                         const feedbackStatus = feedbackStatusForActivity(activity);
+                        const isActivityUpdating = isActivityRequestUpdating(activeRequest, isLoading, dayIndex, activityIndex);
 
                         return (
-                          <div className="activity" key={`${activity.title}-${activityIndex}`}>
+                          <div
+                            className={`activity${isActivityUpdating ? " is-updating-activity" : ""}`}
+                            key={`${activity.title}-${activityIndex}`}
+                          >
                             <div className="time">{activity.time}</div>
                             <div>
                               <div className="activity-title-row">
@@ -872,6 +892,11 @@ export default function Home() {
                                 <span className="tag">{activity.duration}</span>
                                 <span className="tag">{activity.cost}</span>
                               </div>
+                              {isActivityUpdating ? (
+                                <p className="activity-update-note" aria-live="polite">
+                                  {activityUpdateLabel(activeRequest)}
+                                </p>
+                              ) : null}
                             </div>
                             <div className="activity-actions">
                               <div className="activity-action-group">
@@ -927,14 +952,15 @@ export default function Home() {
                             </div>
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="day-collapsed-note">
-                        Expand this day to review the full stop list, activity details, and map links.
-                      </div>
-                    )}
-                  </article>
-                ))}
+                        })
+                      ) : (
+                        <div className="day-collapsed-note">
+                          Expand this day to review the full stop list, activity details, and map links.
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             ) : null}
           </div>
@@ -1142,6 +1168,51 @@ function DaySkeletonGroup({ dayCount }: { dayCount: number }) {
       ))}
     </div>
   );
+}
+
+function isDayRequestUpdating(activeRequest: PendingRequest | null, isLoading: boolean, dayIndex: number) {
+  if (!isLoading || !activeRequest) return false;
+  return activeRequest.target.dayIndex === dayIndex;
+}
+
+function isActivityRequestUpdating(
+  activeRequest: PendingRequest | null,
+  isLoading: boolean,
+  dayIndex: number,
+  activityIndex: number,
+) {
+  if (!isLoading || !activeRequest) return false;
+  return activeRequest.target.dayIndex === dayIndex && activeRequest.target.activityIndex === activityIndex;
+}
+
+function dayUpdateLabel(activeRequest: PendingRequest | null) {
+  switch (activeRequest?.action) {
+    case "regenerate-day":
+      return "Refreshing stops";
+    case "relax-day":
+      return "Rebalancing pace";
+    case "cheaper-day":
+      return "Lowering cost";
+    case "swap-activity":
+    case "kid-friendly-activity":
+    case "remove-activity":
+      return "Updating one stop";
+    default:
+      return "Updating";
+  }
+}
+
+function activityUpdateLabel(activeRequest: PendingRequest | null) {
+  switch (activeRequest?.action) {
+    case "swap-activity":
+      return "Finding a better-matched replacement for this stop.";
+    case "kid-friendly-activity":
+      return "Replacing this stop with a more kid-friendly option.";
+    case "remove-activity":
+      return "Removing this stop and repairing the day around it.";
+    default:
+      return "Updating this stop.";
+  }
 }
 
 function feedbackActivityKey(title: string, mapQuery: string) {

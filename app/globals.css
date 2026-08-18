@@ -547,6 +547,7 @@ select[aria-invalid="true"] {
 }
 
 .day-summary-pill,
+.day-status-pill,
 .day-toggle {
   display: inline-flex;
   align-items: center;
@@ -560,6 +561,11 @@ select[aria-invalid="true"] {
 .day-summary-pill {
   background: rgba(249, 115, 22, 0.12);
   color: var(--brand-dark);
+}
+
+.day-status-pill {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--accent);
 }
 
 .day-toggle {
@@ -611,6 +617,11 @@ select[aria-invalid="true"] {
   border-bottom: 0;
 }
 
+.activity.is-updating-activity {
+  background:
+    linear-gradient(90deg, rgba(230, 255, 251, 0.54), rgba(255, 255, 255, 0.92));
+}
+
 .time {
   color: var(--accent);
   font-weight: 900;
@@ -634,6 +645,13 @@ select[aria-invalid="true"] {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.activity-update-note {
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .activity-actions {
