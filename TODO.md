@@ -43,6 +43,7 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 - AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for San Francisco plus at least one additional common destination, and patch only the item 2 and item 12 defects that the credentialed run proves on top of synced `main` at `4ca5431` or later.
 - Frontend + UX: Do not start new V1 feature work while item 1 is blocked. The latest scoped loading-feedback polish is already on `main`; only respond now if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small demo-fallback-versus-live-AI clarity fixes.
+- Frontend + UX recheck on August 21, 2026: `git fetch origin` succeeded, local `HEAD` still matches `origin/main` at `4ca5431d`, `npm run build` passed on Next.js 15.5.19, and items 7, 17, 18, and 19 remain completed with no newly evidenced UX fallout to patch before item 1 credentialed verification exists.
 - Testing + Release: Stand by unless item 1 verification produces a code change. When that happens, re-run `npm test` and `npm run build` on synced `main`, then add coverage only for the exact provider/auth/repair behavior confirmed during the credentialed run.
 - Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, and reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly.
 
