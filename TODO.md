@@ -651,6 +651,7 @@ Additional verification notes:
 - Reverified on August 10, 2026 from synced `main`: `git fetch origin` succeeded, `npm test` and `npm run build` were rerun after adding local-trip helper coverage for legacy saved-trip normalization and encoded `#trip=` hash parsing, and both commands passed on Next.js 15.5.19.
 - Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, added corrupted-localStorage coverage so invalid saved-trip JSON is removed instead of breaking `#trip=` reloads or the saved-trips sidebar, and reran `npm test` plus `npm run build`.
 - Reverified on August 18, 2026 from local `main`: `npm test` passed all 40 tests and `npm run build` passed on Next.js 15.5.19. `git fetch origin` could not resolve `github.com` in this automation sandbox, so this run relied on the cached tracking ref even though local `HEAD` still matches `origin/main` at `35a59c08`.
+- Reverified on August 20, 2026 from local `main`: local `HEAD` still matches the cached `origin/main` ref at `1b069d0`, added local-trip export coverage for calendar outline plus `.ics` fallback behavior when `startDate` or activity timing text is incomplete, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19. `git fetch origin` still failed in this automation sandbox because GitHub DNS resolution was unavailable.
 
 ## 15. Deployment
 
@@ -691,6 +692,7 @@ Verification notes:
 - Reverified on July 26, 2026 from synced `main`: `npm test` passed with explicit health snapshot and production env validation coverage, and `npm run build` passed without deployment config regressions.
 - Reverified on August 7, 2026 from local `main`: `npm test` and `npm run build` both passed after extending mocked-provider fallback coverage for token-preserving `regenerate-day` behavior. Remote `origin` verification was blocked because `git fetch origin` could not resolve GitHub from this automation environment.
 - Reverified on August 18, 2026 from local `main`: `npm test`, `npm run build`, and the `/api/health` route coverage all remain green. Remote refresh is still blocked in this sandbox because `git fetch origin` cannot resolve `github.com`, but local `HEAD` continues to match the cached `origin/main` ref at `35a59c08`.
+- Reverified on August 20, 2026 from local `main`: `npm test`, `npm run build`, and the local-share export coverage remain green after adding `.ics` fallback coverage for missing `startDate` plus imperfect activity timing text. Remote refresh is still blocked in this sandbox because `git fetch origin` cannot resolve `github.com`, but local `HEAD` continues to match the cached `origin/main` ref at `1b069d0`.
 
 ## 16. Security And Rate Limits
 

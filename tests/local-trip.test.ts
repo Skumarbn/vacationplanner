@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildCalendarIcs,
+  buildCalendarText,
   buildItineraryText,
   buildLocalTripUrl,
   deleteTripFromStorage,
@@ -215,4 +216,46 @@ test("buildCalendarIcs exports trip activities as timed calendar events", () => 
     /URL:https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=Exploratorium%20San%20Francisco%2C%20CA/,
   );
   assert.match(calendarIcs, /LOCATION:Exploratorium San Francisco\\, CA\\, San Francisco\\, CA/);
+});
+
+test("calendar export helpers stay usable when startDate or activity timing is incomplete", () => {
+  const payloadWithoutStartDate: ItineraryResponse = {
+    ...basePayload,
+    token: "trip/with space",
+    tripInput: {
+      ...basePayload.tripInput,
+      startDate: "",
+    },
+    itinerary: {
+      ...basePayload.itinerary,
+      days: [
+        {
+          ...basePayload.itinerary.days[0],
+          activities: [
+            {
+              ...basePayload.itinerary.days[0].activities[0],
+              time: "Morning",
+              duration: "whenever",
+              title: "Boudin Bakery, Cafe; Pier 39",
+              mapQuery: "Boudin Bakery, Cafe; Pier 39 San Francisco, CA",
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  const calendarText = buildCalendarText(payloadWithoutStartDate);
+  const calendarIcs = buildCalendarIcs(payloadWithoutStartDate, new Date("2026-07-26T08:30:00.000Z"));
+
+  assert.match(calendarText, /Starts TBD/);
+  assert.match(calendarText, /Morning: Boudin Bakery, Cafe; Pier 39/);
+  assert.match(calendarIcs, /UID:trip\/with space-0-0@vacationplanner/);
+  assert.match(calendarIcs, /DTSTART:20260726T090000/);
+  assert.match(calendarIcs, /DTEND:20260726T103000/);
+  assert.match(calendarIcs, /SUMMARY:Boudin Bakery\\, Cafe\\; Pier 39/);
+  assert.match(
+    calendarIcs,
+    /URL:https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=Boudin%20Bakery%2C%20Cafe%3B%20Pier%2039%20San%20Francisco%2C%20CA/,
+  );
 });
