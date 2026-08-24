@@ -96,7 +96,7 @@ Verification notes:
 - Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `f3c0207`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 18, 2026 from synced `main`: `git fetch origin` succeeded, local `main` still matched `origin/main` at `35a59c08`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 20, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `4ca5431`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
-- Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `da375438`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+- Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `da375438`, `OPENAI_API_KEY` remained unset, `npm test` passed all 42 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -148,6 +148,7 @@ Verification notes:
 - `npm run build`
 - Reverified on August 15, 2026 from local `main`: `npm test` passed all 40 tests after adding mocked-provider coverage for generic `mapQuery` retries plus repair-time dedupe/normalization, and `npm run build` passed on Next.js 15.5.19.
 - Reverified on August 18, 2026 from synced `main`: `npm test` passed and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
+- Reverified on August 24, 2026 from synced `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
 
 ## 3. Local Trip Storage
 
@@ -559,6 +560,7 @@ Verification notes:
 - Reverified on August 3, 2026 with mocked-provider coverage in `tests/routes.test.ts`: repeated empty or malformed Responses payloads now retry once and then return `200` demo itineraries with `warning.code = demo_fallback` and `warning.details.fallbackReason = malformed_response`; `npm run build` also passed after rebuilding from a fresh `.next` cache.
 - Reverified on August 10, 2026 with mocked-provider coverage in `tests/routes.test.ts`: transport failures, OpenAI `429` responses, empty payload retries, malformed JSON retries, authentication sanitization, and invalid-destination classification still pass under `npm test`; `npm run build` also passed from synced `main`.
 - Reverified on August 18, 2026 from synced `main`: `npm test` and `npm run build` both passed again, but live OpenAI failure-mode acceptance still cannot be closed without a real `OPENAI_API_KEY` in this automation environment.
+- Reverified on August 24, 2026 from synced `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19, but live OpenAI failure-mode acceptance still cannot be closed without a real `OPENAI_API_KEY` in this automation environment.
 
 ## 13. Environment And Config
 
