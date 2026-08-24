@@ -179,6 +179,7 @@ Progress notes:
 - Trips already save to `localStorage` and reload from `#trip=<token>` in the same browser.
 - Added `lib/local-trip.ts` helpers for save/load/delete/list operations with created/updated timestamps and optional expiry handling.
 - Saving a generated trip now updates the URL hash to `#trip=<token>`, so refresh reopens the same locally saved trip in the same browser.
+- Fixed an August 24, 2026 local-storage edge case where listing saved trips could skip later valid entries after removing an expired or corrupted middle record during iteration.
 
 Verification notes:
 
@@ -216,6 +217,7 @@ Progress notes:
 
 - Share links already use `/#trip=<token>`, support copy, and show a friendly unknown-token message.
 - Added a `Copy itinerary text` action and stronger local-only copy so users understand that browser-local links do not travel across devices or browsers.
+- The August 24, 2026 saved-trip listing fix also protects browser-local share recovery by ensuring later valid `#trip=` saves still appear after stale or broken local entries are cleaned up.
 
 Verification notes:
 
@@ -653,6 +655,7 @@ Additional verification notes:
 - Reverified on August 15, 2026 from synced `main`: `git fetch origin` succeeded, added corrupted-localStorage coverage so invalid saved-trip JSON is removed instead of breaking `#trip=` reloads or the saved-trips sidebar, and reran `npm test` plus `npm run build`.
 - Reverified on August 18, 2026 from local `main`: `npm test` passed all 40 tests and `npm run build` passed on Next.js 15.5.19. `git fetch origin` could not resolve `github.com` in this automation sandbox, so this run relied on the cached tracking ref even though local `HEAD` still matches `origin/main` at `35a59c08`.
 - Reverified on August 20, 2026 from local `main`: local `HEAD` still matches the cached `origin/main` ref at `1b069d0`, added local-trip export coverage for calendar outline plus `.ics` fallback behavior when `startDate` or activity timing text is incomplete, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19. `git fetch origin` still failed in this automation sandbox because GitHub DNS resolution was unavailable.
+- Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `fc632263`, added regression coverage so `listSavedTrips` still returns later valid browser-local trips after removing an expired middle entry, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 
 ## 15. Deployment
 

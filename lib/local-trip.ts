@@ -65,11 +65,16 @@ export function deleteTripFromStorage(storage: StorageLike, token: string) {
 
 export function listSavedTrips(storage: StorageLike, now = new Date()) {
   const trips: SavedTrip[] = [];
+  const keys: string[] = [];
 
   for (let index = 0; index < storage.length; index += 1) {
     const key = storage.key(index);
-    if (!key?.startsWith(TRIP_STORAGE_PREFIX)) continue;
+    if (key?.startsWith(TRIP_STORAGE_PREFIX)) {
+      keys.push(key);
+    }
+  }
 
+  for (const key of keys) {
     const token = key.slice(TRIP_STORAGE_PREFIX.length);
     const trip = loadTripFromStorage(storage, token, now);
     if (trip) trips.push(trip);

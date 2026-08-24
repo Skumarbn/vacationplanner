@@ -143,6 +143,32 @@ test("loadTripFromStorage removes expired trips and listSavedTrips sorts newest 
   );
 });
 
+test("listSavedTrips still returns later trips after removing an expired middle entry", () => {
+  const storage = new MemoryStorage();
+
+  saveTripToStorage(storage, { ...basePayload, token: "trip-older" }, "2026-07-28T18:00:00.000Z");
+  storage.setItem(
+    "vacationplanner:expired-middle",
+    JSON.stringify({
+      ...basePayload,
+      token: "expired-middle",
+      createdAt: "2026-07-20T00:00:00.000Z",
+      savedAt: "2026-07-20T00:00:00.000Z",
+      updatedAt: "2026-07-20T00:00:00.000Z",
+      expiresAt: "2026-07-21T00:00:00.000Z",
+    }),
+  );
+  saveTripToStorage(storage, { ...basePayload, token: "trip-newer" }, "2026-07-28T20:00:00.000Z");
+
+  const trips = listSavedTrips(storage, new Date("2026-07-28T21:00:00.000Z"));
+
+  assert.deepEqual(
+    trips.map((trip) => trip.token),
+    ["trip-newer", "trip-older"],
+  );
+  assert.equal(storage.getItem("vacationplanner:expired-middle"), null);
+});
+
 test("loadTripFromStorage and listSavedTrips ignore corrupted saved-trip JSON", () => {
   const storage = new MemoryStorage();
 
