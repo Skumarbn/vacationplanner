@@ -34,9 +34,9 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 31, 2026; use that evidence to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 31, 2026; synced `main` and `origin/main` match at `dc7435e`, and that live-provider evidence is still required to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
 - P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed, then re-run `npm test` and `npm run build` on synced `main`.
-- P2: Keep frontend work limited to UX fallout from verified provider behavior. The August 24, 2026 `da37543` saved-trip listing cleanup regression fix still stands as the only newly evidenced browser-local reliability issue on `main`, so no new feature discovery work is justified.
+- P2: Keep frontend work limited to UX fallout from verified provider behavior. The August 24, 2026 `da37543` saved-trip listing cleanup regression fix still stands as the only newly evidenced browser-local reliability issue on `main`, and the August 31, 2026 `dc7435e` update was documentation-only, so no new feature discovery work is justified.
 - Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
 
 ## Current Agent Handoff
@@ -44,9 +44,9 @@ Agents should not add map/places provider integrations unless explicitly reassig
 - AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for San Francisco plus at least one additional common destination, and patch only the item 2 and item 12 defects that the credentialed run proves on top of synced `main` at `dc7435e` or later.
 - Frontend + UX: Do not start new V1 feature work while item 1 is blocked. The saved-trip cleanup regression is already fixed on `main`; only respond now if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small demo-fallback-versus-live-AI clarity fixes.
 - Frontend + UX recheck on August 27, 2026: `git fetch origin` succeeded, local `HEAD` matches `origin/main` at `d91a72ae`, `OPENAI_API_KEY` remains unset in this automation environment, `npm run build` passed on Next.js 15.5.19, and the latest merged product work since the August 24 backlog refresh is documentation-only. Completed client-side items 6, 7, 8, 9, 11, 17, 18, and 19 show no newly evidenced UX fallout to patch before item 1 credentialed verification exists.
-- Frontend + UX recheck on August 31, 2026: `git fetch origin` succeeded, local `HEAD` matches `origin/main` at `dc7435e`, `OPENAI_API_KEY` remains unset in this automation environment, and a fresh `npm run build` is the only justified verification because the targeted client-side items 6, 7, 8, 9, 11, 17, 18, and 19 remain completed with no new backend-evidenced UX fallout on synced `main`.
-- Testing + Release: Stand by unless item 1 verification produces a code change. Today’s synced baseline already passed `npm test` and `npm run build`; when credentialed verification lands a code change, rerun both on synced `main` and add coverage only for the exact provider/auth/repair behavior confirmed during the live run.
-- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly, and prioritize only docs or evidence-backed small fixes while the live-key blocker remains.
+- Frontend + UX recheck on August 31, 2026: `git fetch origin` succeeded, local `HEAD` matches `origin/main` at `dc7435e`, `OPENAI_API_KEY` remains unset in this automation environment, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and the targeted client-side items 6, 7, 8, 9, 11, 17, 18, and 19 remain completed with no new backend-evidenced UX fallout on synced `main`.
+- Testing + Release: Stand by unless item 1 verification produces a code change. Today’s synced baseline passed `npm test` and `npm run build` again on `dc7435e`; when credentialed verification lands a code change, rerun both on synced `main` and add coverage only for the exact provider/auth/repair behavior confirmed during the live run.
+- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly, and prioritize only docs or evidence-backed small fixes while the live-key blocker remains. Current `main` is already aligned with `origin/main` at `dc7435e`.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -721,6 +721,7 @@ Verification notes:
 - Reverified on August 20, 2026 from local `main`: `npm test`, `npm run build`, and the local-share export coverage remain green after adding `.ics` fallback coverage for missing `startDate` plus imperfect activity timing text. Remote refresh is still blocked in this sandbox because `git fetch origin` cannot resolve `github.com`, but local `HEAD` continues to match the cached `origin/main` ref at `1b069d0`.
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, `npm test`, `npm run build`, and the `/api/health` route coverage remain green after the saved-trip listing cleanup regression fix plus local-trip helper test expansion. Local `HEAD` matched `origin/main` at `da375438`.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
+- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `dc7435e`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
 
 ## 16. Security And Rate Limits
 
