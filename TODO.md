@@ -34,19 +34,19 @@ Agents should not add map/places provider integrations unless explicitly reassig
 
 ## Roadmap Snapshot
 
-- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 31, 2026; synced `main` and `origin/main` match at `dc7435e`, and that live-provider evidence is still required to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
+- P0: Real-credential OpenAI verification for item 1 remains the only open V1 blocker as of August 31, 2026; cached `origin/main` is still at `dc7435e` in this automation environment, and that live-provider evidence is still required to close the remaining acceptance gaps in items 2 and 12 without adding external place-data APIs.
 - P1: If credentialed verification reveals real defects, land only the smallest backend/test follow-up needed, then re-run `npm test` and `npm run build` on synced `main`.
 - P2: Keep frontend work limited to UX fallout from verified provider behavior. The August 24, 2026 `da37543` saved-trip listing cleanup regression fix still stands as the only newly evidenced browser-local reliability issue on `main`, and the August 31, 2026 `dc7435e` update was documentation-only, so no new feature discovery work is justified.
 - Later: Do not reopen new feature discovery work unless item 1 verification is complete or the user explicitly reprioritizes V1.
 
 ## Current Agent Handoff
 
-- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for San Francisco plus at least one additional common destination, and patch only the item 2 and item 12 defects that the credentialed run proves on top of synced `main` at `dc7435e` or later.
+- AI + Backend: Treat item 1 as the sole active blocker. Run acceptance verification with a real `OPENAI_API_KEY`, record exact destination/provider passes or failures for San Francisco plus at least one additional common destination, and patch only the item 2 and item 12 defects that the credentialed run proves on top of local `main` at cached `origin/main` commit `dc7435e` or later until remote fetch succeeds again.
 - Frontend + UX: Do not start new V1 feature work while item 1 is blocked. The saved-trip cleanup regression is already fixed on `main`; only respond now if credentialed backend verification exposes UX fallout, and keep any follow-up limited to copy, retry-state wording, or small demo-fallback-versus-live-AI clarity fixes.
 - Frontend + UX recheck on August 27, 2026: `git fetch origin` succeeded, local `HEAD` matches `origin/main` at `d91a72ae`, `OPENAI_API_KEY` remains unset in this automation environment, `npm run build` passed on Next.js 15.5.19, and the latest merged product work since the August 24 backlog refresh is documentation-only. Completed client-side items 6, 7, 8, 9, 11, 17, 18, and 19 show no newly evidenced UX fallout to patch before item 1 credentialed verification exists.
-- Frontend + UX recheck on August 31, 2026: `git fetch origin` succeeded, local `HEAD` matches `origin/main` at `dc7435e`, `OPENAI_API_KEY` remains unset in this automation environment, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and the targeted client-side items 6, 7, 8, 9, 11, 17, 18, and 19 remain completed with no new backend-evidenced UX fallout on synced `main`.
-- Testing + Release: Stand by unless item 1 verification produces a code change. Today’s synced baseline passed `npm test` and `npm run build` again on `dc7435e`; when credentialed verification lands a code change, rerun both on synced `main` and add coverage only for the exact provider/auth/repair behavior confirmed during the live run.
-- Mainline Manager: Keep `main` synced to `origin`, preserve the V1 constraints in docs, reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly, and prioritize only docs or evidence-backed small fixes while the live-key blocker remains. Current `main` is already aligned with `origin/main` at `dc7435e`.
+- Frontend + UX recheck on August 31, 2026: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matches the cached `origin/main` ref at `dc7435e`, `OPENAI_API_KEY` remains unset, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and the targeted client-side items 6, 7, 8, 9, 11, 17, 18, and 19 remain completed with no new backend-evidenced UX fallout.
+- Testing + Release: Stand by unless item 1 verification produces a code change. Today’s local baseline at cached `origin/main` commit `dc7435e` passed `npm test` and `npm run build` again; when credentialed verification lands a code change, rerun both and add coverage only for the exact provider/auth/repair behavior confirmed during the live run.
+- Mainline Manager: Keep `main` synced to `origin` when remote access is available, preserve the V1 constraints in docs, reject reopened wishlist work until item 1 credentialed verification is complete or product direction changes explicitly, and prioritize only docs or evidence-backed small fixes while the live-key blocker remains. Current local `HEAD` still matches the cached `origin/main` ref at `dc7435e`.
 
 ## 1. Exact Place Generation With OpenAI
 
@@ -90,7 +90,7 @@ Progress notes:
 - Rechecked on August 20, 2026 after fetching `origin`: local `main` matches `origin/main` at `4ca5431`, `OPENAI_API_KEY` remains unset in this automation environment, and item 1 stays blocked pending the required live OpenAI acceptance pass for San Francisco plus at least one additional common destination.
 - Rechecked on August 24, 2026 after fetching `origin`: local `main` matches `origin/main` at `da375438`, `OPENAI_API_KEY` remains unset in this automation environment, and item 1 stays blocked pending the required live OpenAI acceptance pass for San Francisco plus at least one additional common destination.
 - Rechecked on August 27, 2026 after fetching `origin`: local `main` matches `origin/main` at `d91a72ae`, `OPENAI_API_KEY` remains unset in this automation environment, and item 1 stays blocked pending the required live OpenAI acceptance pass for San Francisco plus at least one additional common destination.
-- Rechecked on August 31, 2026 after fetching `origin`: local `main` matches `origin/main` at `dc7435e`, `OPENAI_API_KEY` remains unset in this automation environment, and item 1 stays blocked pending the required live OpenAI acceptance pass for San Francisco plus at least one additional common destination.
+- Rechecked on August 31, 2026 after attempting `git fetch origin`: GitHub DNS resolution failed in this automation environment, local `HEAD` still matches the cached `origin/main` ref at `dc7435e`, `OPENAI_API_KEY` remains unset, and item 1 stays blocked pending the required live OpenAI acceptance pass for San Francisco plus at least one additional common destination.
 
 Verification notes:
 
@@ -101,7 +101,7 @@ Verification notes:
 - Reverified on August 20, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `4ca5431`, and `OPENAI_API_KEY` remained unset. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `da375438`, `OPENAI_API_KEY` remained unset, `npm test` passed all 42 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `d91a72ae`, `OPENAI_API_KEY` remained unset, `npm test` passed all 42 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
-- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `main` matched `origin/main` at `dc7435e`, `OPENAI_API_KEY` remained unset, `npm test` passed all 42 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
+- Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, `OPENAI_API_KEY` remained unset, `npm test` passed all 42 tests, and `npm run build` passed on Next.js 15.5.19. Live OpenAI acceptance remains blocked until a real key is available in this automation environment.
 
 ## 2. AI Itinerary Quality Pipeline
 
@@ -147,7 +147,7 @@ Progress notes:
 - Rechecked on August 20, 2026 from synced `main`: local `HEAD` matches `origin/main` at `4ca5431`, the latest frontend loading-feedback refinement is already merged, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
 - Rechecked on August 24, 2026 from synced `main`: local `HEAD` matches `origin/main` at `da375438`, the only newly merged product work is the saved-trip listing cleanup regression fix plus its test follow-up, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
 - Rechecked on August 27, 2026 from synced `main`: local `HEAD` matches `origin/main` at `d91a72ae`, no new backend defects are evidenced by the current handoff or green mocked-provider suite, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
-- Rechecked on August 31, 2026 from synced `main`: local `HEAD` matches `origin/main` at `dc7435e`, no new backend defects are evidenced by the current handoff or green mocked-provider suite, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
+- Rechecked on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matches the cached `origin/main` ref at `dc7435e`, no new backend defects are evidenced by the current handoff or green mocked-provider suite, and item 2 remains `Partial` solely pending live OpenAI verification with real credentials.
 
 Verification notes:
 
@@ -157,7 +157,7 @@ Verification notes:
 - Reverified on August 18, 2026 from synced `main`: `npm test` passed and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
 - Reverified on August 24, 2026 from synced `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
 - Reverified on August 27, 2026 from synced `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
-- Reverified on August 31, 2026 from synced `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
+- Reverified on August 31, 2026 from local `main`: `npm test` passed all 42 tests and `npm run build` passed on Next.js 15.5.19. Item 2 still needs credentialed OpenAI acceptance evidence rather than more mocked-provider changes.
 
 ## 3. Local Trip Storage
 
@@ -560,7 +560,7 @@ Progress notes:
 - Rechecked on August 20, 2026 after fetching `origin`: local `main` and `origin/main` match at `4ca5431`, `OPENAI_API_KEY` remains unset in this automation environment, and no new implementation evidence changes the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
 - Rechecked on August 24, 2026 after fetching `origin`: local `main` and `origin/main` match at `da375438`, `OPENAI_API_KEY` remains unset in this automation environment, and no new implementation evidence changes the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
 - Rechecked on August 27, 2026 after fetching `origin`: local `main` and `origin/main` match at `d91a72ae`, `OPENAI_API_KEY` remains unset in this automation environment, and no new implementation evidence changes the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
-- Rechecked on August 31, 2026 after fetching `origin`: local `main` and `origin/main` match at `dc7435e`, `OPENAI_API_KEY` remains unset in this automation environment, and no new implementation evidence changes the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
+- Rechecked on August 31, 2026 after attempting `git fetch origin`: GitHub DNS resolution failed in this automation environment, local `HEAD` still matches the cached `origin/main` ref at `dc7435e`, `OPENAI_API_KEY` remains unset, and no new implementation evidence changes the provider-risk assessment. Item 12 remains `Partial` pending live OpenAI verification.
 
 Verification notes:
 
@@ -615,7 +615,7 @@ Verification notes:
 - Reverified on July 26, 2026 from `main`: `npm test` passed with direct coverage for production `APP_URL` validation and `instrumentation.ts` startup checks, and `npm run build` passed afterward.
 - Reverified on August 18, 2026 from local `main`: `npm test` still passed the env/config coverage and `npm run build` still passed on Next.js 15.5.19. `git fetch origin` could not refresh the remote in this automation sandbox because GitHub DNS resolution failed, although local `HEAD` still matches the cached `origin/main` ref at `35a59c08`.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, the env/config coverage still passed under `npm test`, and `npm run build` still passed on Next.js 15.5.19 with no new `.env` or startup-validation gaps evidenced by the current handoff.
-- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `dc7435e`, the env/config coverage still passed under `npm test`, and `npm run build` still passed on Next.js 15.5.19 with no new `.env` or startup-validation gaps evidenced by the current handoff.
+- Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, the env/config coverage still passed under `npm test`, and `npm run build` still passed on Next.js 15.5.19 with no new `.env` or startup-validation gaps evidenced by the current handoff.
 
 ## 14. Testing
 
@@ -677,7 +677,7 @@ Additional verification notes:
 - Reverified on August 20, 2026 from local `main`: local `HEAD` still matches the cached `origin/main` ref at `1b069d0`, added local-trip export coverage for calendar outline plus `.ics` fallback behavior when `startDate` or activity timing text is incomplete, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19. `git fetch origin` still failed in this automation sandbox because GitHub DNS resolution was unavailable.
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `da375438`, added regression coverage so `listSavedTrips` still returns later valid browser-local trips after removing an expired middle entry, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, no new code changes were justified by the current backend handoff, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
-- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `dc7435e`, no new code changes were justified by the current backend handoff, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
+- Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, no new code changes were justified by the current backend handoff, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 
 ## 15. Deployment
 
@@ -721,7 +721,7 @@ Verification notes:
 - Reverified on August 20, 2026 from local `main`: `npm test`, `npm run build`, and the local-share export coverage remain green after adding `.ics` fallback coverage for missing `startDate` plus imperfect activity timing text. Remote refresh is still blocked in this sandbox because `git fetch origin` cannot resolve `github.com`, but local `HEAD` continues to match the cached `origin/main` ref at `1b069d0`.
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, `npm test`, `npm run build`, and the `/api/health` route coverage remain green after the saved-trip listing cleanup regression fix plus local-trip helper test expansion. Local `HEAD` matched `origin/main` at `da375438`.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
-- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `dc7435e`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
+- Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
 
 ## 16. Security And Rate Limits
 
@@ -760,7 +760,7 @@ Verification notes:
 - `npm test`
 - `npm run build`
 - Automated route coverage now verifies repeated rapid requests return `429 rate_limited` and oversized JSON bodies return `413 validation_error`.
-- Reverified on August 31, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `dc7435e`, and the existing `npm test` route coverage plus `npm run build` both remained green with no new rate-limit or request-size regressions evidenced.
+- Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, and the existing `npm test` route coverage plus `npm run build` both remained green with no new rate-limit or request-size regressions evidenced.
 
 ## 17. Mobile Polish
 
