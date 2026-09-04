@@ -679,6 +679,7 @@ Additional verification notes:
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `da375438`, added regression coverage so `listSavedTrips` still returns later valid browser-local trips after removing an expired middle entry, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, no new code changes were justified by the current backend handoff, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 - Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, no new code changes were justified by the current backend handoff, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
+- Reverified on September 3, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `4cd2822a`, added route coverage asserting deployment-facing `X-RateLimit-*` headers plus proxy-header fallback across `x-forwarded-for`, `x-real-ip`, and `cf-connecting-ip`, and reran `npm test` plus `npm run build` successfully on Next.js 15.5.19.
 
 ## 15. Deployment
 
@@ -723,6 +724,7 @@ Verification notes:
 - Reverified on August 24, 2026 from synced `main`: `git fetch origin` succeeded, `npm test`, `npm run build`, and the `/api/health` route coverage remain green after the saved-trip listing cleanup regression fix plus local-trip helper test expansion. Local `HEAD` matched `origin/main` at `da375438`.
 - Reverified on August 27, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `d91a72ae`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
 - Reverified on August 31, 2026 from local `main`: `git fetch origin` failed because `github.com` could not be resolved in this automation environment, local `HEAD` still matched the cached `origin/main` ref at `dc7435e`, `npm test` passed all 42 tests, `npm run build` passed on Next.js 15.5.19, and `/api/health` coverage still leaves deployment readiness blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
+- Reverified on September 3, 2026 from synced `main`: `git fetch origin` succeeded, local `HEAD` matched `origin/main` at `4cd2822a`, `npm test` passed all 43 tests after adding deployment-facing rate-limit header and proxy-client fallback coverage in `tests/routes.test.ts`, `npm run build` passed on Next.js 15.5.19, and deployment readiness still remains blocked only by the missing live `OPENAI_API_KEY` acceptance run for item 1.
 
 ## 16. Security And Rate Limits
 

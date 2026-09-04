@@ -915,11 +915,63 @@ test("POST /api/itinerary rate limits repeated requests from the same client", a
   assert.equal(first.status, 200);
   assert.equal(second.status, 200);
   assert.equal(third.status, 429);
+  assert.equal(first.headers.get("X-RateLimit-Limit"), "2");
+  assert.equal(first.headers.get("X-RateLimit-Remaining"), "1");
+  assert.match(String(first.headers.get("X-RateLimit-Reset")), /^\d+$/);
+  assert.equal(second.headers.get("X-RateLimit-Limit"), "2");
+  assert.equal(second.headers.get("X-RateLimit-Remaining"), "0");
   assert.equal(third.headers.get("Retry-After"), "60");
+  assert.equal(third.headers.get("X-RateLimit-Limit"), "2");
+  assert.equal(third.headers.get("X-RateLimit-Remaining"), "0");
+  assert.match(String(third.headers.get("X-RateLimit-Reset")), /^\d+$/);
 
   const payload = (await third.json()) as Record<string, unknown>;
   assert.equal(payload.code, "rate_limited");
   assert.match(String(payload.error), /Too many itinerary requests/);
+});
+
+test("POST /api/itinerary rate limiting falls back across proxy client headers", async () => {
+  process.env.ITINERARY_RATE_LIMIT_MAX_REQUESTS = "1";
+
+  const body: ItineraryRequest = {
+    action: "generate",
+    tripInput: {
+      destination: "San Francisco, CA",
+      startDate: "2026-08-12",
+      days: 1,
+      adults: 2,
+      children: 0,
+      budget: "Moderate",
+      pace: "Balanced",
+      interests: ["Food", "Museums"],
+    },
+  };
+
+  const forwardedFirst = await postItinerary(
+    buildRequestWithHeaders(body, { "x-forwarded-for": "203.0.113.10, 198.51.100.4" }),
+  );
+  const forwardedSecond = await postItinerary(
+    buildRequestWithHeaders(body, { "x-forwarded-for": "203.0.113.10, 198.51.100.4" }),
+  );
+  const realIpFirst = await postItinerary(
+    buildRequestWithHeaders(body, { "x-real-ip": "198.51.100.8" }),
+  );
+  const realIpSecond = await postItinerary(
+    buildRequestWithHeaders(body, { "x-real-ip": "198.51.100.8" }),
+  );
+  const cloudflareFirst = await postItinerary(
+    buildRequestWithHeaders(body, { "cf-connecting-ip": "192.0.2.55" }),
+  );
+  const cloudflareSecond = await postItinerary(
+    buildRequestWithHeaders(body, { "cf-connecting-ip": "192.0.2.55" }),
+  );
+
+  assert.equal(forwardedFirst.status, 200);
+  assert.equal(forwardedSecond.status, 429);
+  assert.equal(realIpFirst.status, 200);
+  assert.equal(realIpSecond.status, 429);
+  assert.equal(cloudflareFirst.status, 200);
+  assert.equal(cloudflareSecond.status, 429);
 });
 
 test("POST /api/itinerary rejects oversized request bodies", async () => {
