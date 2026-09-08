@@ -75,6 +75,25 @@ test("POST /api/itinerary rejects unsupported actions", async () => {
   assert.match(String(body.error), /Unsupported itinerary action/);
 });
 
+test("POST /api/itinerary rejects malformed JSON with a structured error", async () => {
+  const response = await postItinerary(
+    new Request("http://127.0.0.1:3000/api/itinerary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: '{"tripInput":',
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), {
+    error: "Request body must be valid JSON.",
+    code: "validation_error",
+    details: {
+      request: "Send a valid JSON itinerary payload.",
+    },
+  });
+});
+
 test("POST /api/itinerary preserves unrelated days during regeneration", async () => {
   const initialResponse = await postItinerary(
     buildRequest({
