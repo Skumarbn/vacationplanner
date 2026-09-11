@@ -366,6 +366,7 @@ Verification notes:
 - Manual behavior note on August 10, 2026 from synced `main`: the sidebar fallback warning now explains that the current browser-saved itinerary stays intact and adds a `Try live AI again` action, so demo fallback recovery remains visible even after the transient form banner expires.
 - `npm run build`
 - Manual behavior note on August 15, 2026 from synced `main`: demo fallback copy now explains that a successful live retry updates the same browser-saved trip, highlights export options for preserving the current draft first, and labels the retry action as `Retry live AI` in both the form banner and sidebar warning card.
+- Reverified on September 10, 2026 from synced `main` at `92935ae`: `npm test` passed all 44 provider-independent tests and `npm run build` passed on Next.js 15.5.19. In-app browser checks confirmed the demo-mode banner, regeneration/export controls, one expanded day with four Google Maps links for a 1-day trip, and two expanded days with eight Google Maps links for a 2-day trip. No frontend fallout or new V1 work was evidenced while `OPENAI_API_KEY` remains unset.
 
 ## 8. Advanced Regeneration Controls
 
